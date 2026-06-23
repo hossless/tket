@@ -1,0 +1,16 @@
+# Python Caches (The invisible clutter)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments (Massive folders we don't want to upload)
+.venv/
+venv/
+env/
+
+# Environment Variables (SUPER IMPORTANT - Hides your Postgres passwords!)
+.env
+
+# OS Generated Files (Junk files from Windows/Mac)
+.DS_Store
+Thumbs.db

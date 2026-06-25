@@ -3,12 +3,12 @@
 -- ==========================================
 
 -- DROP EXISTING TABLES
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS tickets CASCADE;
 DROP TABLE IF EXISTS reports CASCADE;
 DROP TABLE IF EXISTS payments CASCADE;
 DROP TABLE IF EXISTS reservations CASCADE;
 DROP TABLE IF EXISTS match_details CASCADE;
-DROP TABLE IF EXISTS tickets CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
 
 -- CREATE CORE TABLES
 CREATE TABLE users (
@@ -58,4 +58,26 @@ CREATE TABLE reservations (
     reservation_status VARCHAR(20) DEFAULT 'Pending' NOT NULL,
     reserved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_valid_quantity CHECK (quantity > 0)
+);
+
+CREATE TABLE payments (
+    payment_id SERIAL PRIMARY KEY,
+    reservation_id INT NOT NULL REFERENCES reservations(reservation_id),
+    amount NUMERIC(12, 2) NOT NULL,
+    method VARCHAR(50) DEFAULT 'Credit Card' NOT NULL,
+    transaction_status VARCHAR(20) DEFAULT 'Pending' NOT NULL,
+    tracking_code VARCHAR(100), 
+    paid_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_positive_amount CHECK (amount > 0)
+);
+
+CREATE TABLE reports (
+    report_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(user_id),
+    reservation_id INT REFERENCES reservations(reservation_id),
+    report_type VARCHAR(20) DEFAULT 'General' NOT NULL,
+    description VARCHAR(500) NOT NULL,
+    reply VARCHAR(500), 
+    report_status VARCHAR(20) DEFAULT 'Waiting' NOT NULL,
+    reported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

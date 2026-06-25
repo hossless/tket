@@ -23,14 +23,14 @@ The foundational database schema has been designed, fully constrained, and optim
 * **Defensive Constraints:** Robust table-level `CHECK` constraints applied to ensure absolute data integrity (e.g., preventing remaining capacity from exceeding total capacity).
 
 ## 🗂️ Repository Structure
-\`\`\`text
+```text
 tket/
 ├── database/
 │   └── db_schema.sql          # Master PostgreSQL initialization script (Tables, Constraints, Indexes)
 ├── docs/
 │   └── phase1/
-│       └── phase1_report.pdf  # Detailed architectural specification and design justifications
+│       ├── phase1_report.pdf  # Detailed architectural specification and design justifications
 │       ├── ERD.pdf            # High-level Entity Relationship Diagram
 │       └── ERD.drawio         # Editable source file for the ERD
 └── README.md
-\`\`\`
+```

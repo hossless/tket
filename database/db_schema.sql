@@ -2,6 +2,7 @@
 -- tket: DATABASE SCHEMA (POSTGRESQL)
 -- ==========================================
 
+
 -- DROP EXISTING TABLES
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS tickets CASCADE;
@@ -9,6 +10,7 @@ DROP TABLE IF EXISTS reports CASCADE;
 DROP TABLE IF EXISTS payments CASCADE;
 DROP TABLE IF EXISTS reservations CASCADE;
 DROP TABLE IF EXISTS match_details CASCADE;
+
 
 -- CREATE CORE TABLES
 CREATE TABLE users (
@@ -81,3 +83,27 @@ CREATE TABLE reports (
     report_status VARCHAR(20) DEFAULT 'Waiting' NOT NULL,
     reported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+-- CREATE INDEXES
+CREATE INDEX idx_ticket_price 
+ON tickets(price);
+
+CREATE INDEX idx_ticket_date_time 
+ON tickets(ticket_date_time);
+
+CREATE INDEX idx_ticket_teams 
+ON tickets(home_team, away_team);
+
+CREATE INDEX idx_ticket_search 
+ON tickets(sport_type, venue_city, ticket_date_time);
+
+CREATE INDEX idx_res_pending 
+ON reservations(reservation_status) 
+WHERE reservation_status = 'Pending';
+
+-- foreign keys
+CREATE INDEX idx_report_user ON reports(user_id);
+CREATE INDEX idx_res_user ON reservations(user_id);
+CREATE INDEX idx_pay_res ON payments(reservation_id);
+CREATE INDEX idx_res_ticket ON reservations(ticket_id);

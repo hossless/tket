@@ -40,3 +40,22 @@ CREATE TABLE tickets (
     CONSTRAINT chk_positive_numbers CHECK (total_capacity > 0 AND remaining_capacity >= 0 AND price >= 0),
     CONSTRAINT chk_logical_capacity CHECK (remaining_capacity <= total_capacity)
 );
+
+CREATE TABLE match_details (
+    ticket_id INT PRIMARY KEY REFERENCES tickets(ticket_id),
+    organizer VARCHAR(50),
+    tournament_name VARCHAR(50) NOT NULL,
+    venue_name VARCHAR(50) NOT NULL,
+    facilities VARCHAR(500) 
+);
+
+CREATE TABLE reservations (
+    reservation_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(user_id),
+    ticket_id INT NOT NULL REFERENCES tickets(ticket_id),
+    quantity INT NOT NULL,
+    seat_info VARCHAR(100), 
+    reservation_status VARCHAR(20) DEFAULT 'Pending' NOT NULL,
+    reserved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_valid_quantity CHECK (quantity > 0)
+);

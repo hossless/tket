@@ -55,6 +55,7 @@ CREATE TABLE reservations (
     reservation_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(user_id),
     ticket_id INT NOT NULL REFERENCES tickets(ticket_id),
+    canceled_by INT REFERENCES users(user_id),
     quantity INT NOT NULL,
     seat_info VARCHAR(100), 
     reservation_status VARCHAR(20) DEFAULT 'Pending' NOT NULL,

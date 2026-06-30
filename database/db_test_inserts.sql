@@ -61,15 +61,15 @@ INSERT INTO reservations (user_id, ticket_id, quantity, seat_info, reservation_s
 
 -- PAYMENTS
 INSERT INTO payments (reservation_id, amount, method, transaction_status, tracking_code, paid_at) VALUES
-(1, 300.00, 'Credit Card', 'Success', 'TRX-998877', '2026-09-01 10:05:00'),
+(1, 300.00, 'Credit Card', 'Success', 'TRX-998877', '2026-08-15 10:00:00'), -- Moved to August
 (2, 480.00, 'PayPal', 'Success', 'TRX-112233', '2026-09-05 14:35:00'),
-(3, 500.00, 'Credit Card', 'Success', 'TRX-445566', '2026-09-10 09:20:00'),
+(3, 500.00, 'Credit Card', 'Success', 'TRX-445566', '2026-10-05 14:00:00'), -- Moved to October
 (4, 540.00, 'Crypto', 'Success', 'TRX-778899', '2026-09-12 11:05:00'),
 (5, 50.00, 'Credit Card', 'Pending', NULL, NULL),
 (6, 425.00, 'Bank Transfer', 'Refunded', 'TRX-REF-001', '2023-04-02 10:00:00'),
 (7, 300.00, 'Credit Card', 'Refunded', 'TRX-REF-002', '2026-09-16 09:00:00'),
 (8, 80.00, 'PayPal', 'Refunded', 'TRX-REF-003', '2023-11-02 11:00:00'),
-(9, 180.00, 'Credit Card', 'Success', 'TRX-334455', '2026-09-20 15:50:00'),
+(9, 180.00, 'Credit Card', 'Success', 'TRX-334455', '2026-11-20 09:00:00'), -- Moved to November
 (10, 120.00, 'Crypto', 'Success', 'TRX-667788', '2026-09-22 09:05:00'),
 (11, 300.00, 'Credit Card', 'Pending', NULL, NULL),
 (12, 450.00, 'Bank Transfer', 'Refunded', 'TRX-REF-004', '2026-09-26 10:00:00');

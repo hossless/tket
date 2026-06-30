@@ -2,6 +2,7 @@
 -- DUMMY INSERTS FOR TESTING
 -- ==========================================
 
+
 -- USERS
 INSERT INTO users (username, password_hash, email, phone_number, first_name, last_name, city, role, account_status, created_at) VALUES
 ('admin_collina', 'hashed_pass', 'pierluigi@fifa.com', '09120000001', 'Pierluigi', 'Collina', 'Rome', 'Admin', 'Active', '2022-01-01 10:00:00'),

@@ -237,3 +237,69 @@ GROUP BY u.user_id, u.username
 ORDER BY total_cancelations DESC
 LIMIT 1;
 
+-- QUERY 18: Update Last Name of User with Most Cancelations
+    -- Updates the last name to 'Reddington' for the user 
+    -- who has the highest total volume of canceled tickets.
+
+UPDATE users
+SET last_name = 'Reddington'
+WHERE user_id = (
+    SELECT user_id
+    FROM reservations
+    WHERE reservation_status = 'Canceled'
+    GROUP BY user_id
+    ORDER BY SUM(quantity) DESC
+    LIMIT 1
+);
+
+-- QUERY 19: Delete Canceled Reservations for Reddington
+    -- Deletes all reservation records with a 'Canceled' status 
+    -- that belong to the user with the last name 'Reddington'.
+
+DELETE FROM reservations
+WHERE reservation_status = 'Canceled'
+  AND user_id IN (
+      SELECT user_id
+      FROM users
+      WHERE last_name = 'Reddington'
+  );
+
+-- QUERY 20: Delete All Canceled Reservations
+    -- Deletes all records from the reservations table that have 
+    -- a status of 'Canceled'.
+
+DELETE FROM reservations 
+WHERE reservation_status = 'Canceled';
+
+-- QUERY 21: Decrease Ticket Prices for Yesterday's Allianz Arena
+    -- Sales Reduces the price by 10% (multiplying by 0.90) for 
+    -- tickets where the joined matchdetails venue_name is Allianz 
+    -- Arena(replaced Azadi) and the reservation was successfully confirmed.
+
+UPDATE tickets
+SET price = price * 0.90
+FROM matchdetails md
+WHERE tickets.ticket_id = md.ticket_id
+  AND md.venue_name = 'Staples Center'
+  AND tickets.ticket_id IN (
+      SELECT ticket_id 
+      FROM reservations 
+      WHERE DATE(reserved_at) = CURRENT_DATE - INTERVAL '1 day'
+        AND reservation_status = 'Confirmed'
+  );
+
+  -- QUERY 22: Ticket with the Most Reports
+    -- Retrieves the home and away teams (subject) and the total count 
+    -- of reports for the specific ticket that has received the highest 
+    -- number of reports.
+
+SELECT 
+    t.home_team, 
+    t.away_team, 
+    COUNT(r.report_id) AS number_of_reports
+FROM tickets t
+JOIN reservations res ON t.ticket_id = res.ticket_id
+JOIN reports r ON res.reservation_id = r.reservation_id
+GROUP BY t.ticket_id, t.home_team, t.away_team
+ORDER BY number_of_reports DESC
+LIMIT 1;

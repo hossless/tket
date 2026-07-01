@@ -140,3 +140,100 @@ WHERE r.user_id = (
 )
 AND r.reservation_status = 'Confirmed';
 
+-- QUERY 11: List of Site Supporters (Admins)
+    -- Retrieves the usernames of all users who hold the 'Admin' role.
+
+SELECT username 
+FROM users 
+WHERE role = 'Admin';
+
+-- QUERY 12: Users With At Least Two Tickets Purchased
+    -- Retrieves the usernames of users who have successfully 
+    -- purchased a total of 2 or more tickets across all reservations.
+
+SELECT u.username 
+FROM users u 
+JOIN reservations r ON u.user_id = r.user_id 
+WHERE r.reservation_status = 'Confirmed'
+GROUP BY u.user_id, u.username 
+HAVING SUM(r.quantity) >= 2;
+
+-- QUERY 13: Users With Maximum 2 Football Tickets
+    -- Retrieves the usernames of users who have successfully 
+    -- purchased 2 or fewer tickets specifically for 'Football' matches.
+
+SELECT u.username 
+FROM users u 
+JOIN reservations r ON u.user_id = r.user_id 
+JOIN tickets t ON r.ticket_id = t.ticket_id 
+WHERE r.reservation_status = 'Confirmed' 
+  AND t.sport_type = 'Football'
+GROUP BY u.user_id, u.username 
+HAVING SUM(r.quantity) <= 2;
+
+-- QUERY 14: Contact Info of Users Who Bought All Sports
+    -- Uses COALESCE to return contact info for users who have 
+    -- confirmed reservations across all three distinct sport types.
+
+SELECT 
+    u.username,
+    COALESCE(u.email, u.phone_number) AS contact_info
+FROM users u
+JOIN reservations r ON u.user_id = r.user_id
+JOIN tickets t ON r.ticket_id = t.ticket_id
+WHERE r.reservation_status = 'Confirmed'
+  AND t.sport_type IN ('Football', 'Basketball', 'Volleyball')
+GROUP BY u.user_id, u.username, u.email, u.phone_number
+HAVING COUNT(DISTINCT t.sport_type) = 3;
+
+-- QUERY 15: Tickets Purchased Today
+    -- Retrieves ticket details for all confirmed reservations made 
+    -- on the current calendar day, ordered chronologically by time.
+
+SELECT 
+    u.username,
+    t.sport_type,
+    r.quantity,
+    r.reserved_at
+FROM reservations r
+JOIN tickets t ON r.ticket_id = t.ticket_id
+JOIN users u ON r.user_id = u.user_id
+WHERE DATE(r.reserved_at) = CURRENT_DATE
+  AND r.reservation_status = 'Confirmed'
+ORDER BY r.reserved_at ASC;
+
+-- QUERY 16: Second Best-Selling Ticket
+    -- Retrieves the match details of exactly the second most popular 
+    -- ticket based on the total quantity of confirmed reservations.
+
+SELECT 
+    t.home_team, 
+    t.away_team, 
+    SUM(r.quantity) AS number_of_tickets
+FROM tickets t 
+JOIN reservations r ON t.ticket_id = r.ticket_id 
+WHERE r.reservation_status = 'Confirmed'
+GROUP BY t.ticket_id, t.home_team, t.away_team
+ORDER BY SUM(r.quantity) DESC
+LIMIT 1 OFFSET 1;
+
+-- QUERY 17: Top Admin by Reservation Cancelations
+    -- Retrieves the username, total number of canceled reservations, 
+    -- and the percentage of all system cancelations handled by the 
+    -- admin with the highest cancelation count.
+
+SELECT 
+    u.username, 
+    COUNT(r.reservation_id) AS total_cancelations,
+    ROUND(
+        (COUNT(r.reservation_id) * 100.0) / 
+        (SELECT COUNT(*) FROM reservations WHERE reservation_status = 'Canceled'), 
+        2
+    ) AS cancelation_percentage
+FROM users u 
+JOIN reservations r ON u.user_id = r.canceled_by
+WHERE r.reservation_status = 'Canceled' AND u.role = 'Admin'
+GROUP BY u.user_id, u.username
+ORDER BY total_cancelations DESC
+LIMIT 1;
+

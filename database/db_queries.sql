@@ -288,18 +288,23 @@ WHERE tickets.ticket_id = md.ticket_id
         AND reservation_status = 'Confirmed'
   );
 
-  -- QUERY 22: Ticket with the Most Reports
-    -- Retrieves the home and away teams (subject) and the total count 
-    -- of reports for the specific ticket that has received the highest 
-    -- number of reports.
+-- QUERY 22 : Ticket with the Most Reports
+    -- Retrieves the report_type (subject) and the total count 
+    -- of reports for the specific ticket that has received the 
+    -- highest number of reports overall.
 
 SELECT 
-    t.home_team, 
-    t.away_team, 
+    r.report_type AS subject, 
     COUNT(r.report_id) AS number_of_reports
-FROM tickets t
-JOIN reservations res ON t.ticket_id = res.ticket_id
-JOIN reports r ON res.reservation_id = r.reservation_id
-GROUP BY t.ticket_id, t.home_team, t.away_team
-ORDER BY number_of_reports DESC
-LIMIT 1;
+FROM reports r
+JOIN reservations res ON r.reservation_id = res.reservation_id
+WHERE res.ticket_id = (
+    SELECT ticket_id
+    FROM reports r2
+    JOIN reservations res2 ON r2.reservation_id = res2.reservation_id
+    GROUP BY res2.ticket_id
+    ORDER BY COUNT(r2.report_id) DESC
+    LIMIT 1
+)
+GROUP BY r.report_type
+ORDER BY number_of_reports DESC;

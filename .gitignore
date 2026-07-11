@@ -1,16 +1,19 @@
-# Python Caches (The invisible clutter)
+# Python Caches
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Virtual Environments (Massive folders we don't want to upload)
+# Virtual Environments 
 .venv/
 venv/
 env/
 
-# Environment Variables (SUPER IMPORTANT - Hides your Postgres passwords!)
+# Environment Variables
 .env
 
-# OS Generated Files (Junk files from Windows/Mac)
+# OS Generated Files
 .DS_Store
 Thumbs.db
+
+# Django default local database
+db.sqlite3

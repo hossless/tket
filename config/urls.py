@@ -23,4 +23,5 @@ urlpatterns = [
     path('api/cities-venues/', views.get_cities_and_venues_list),
     path('api/tickets/<int:ticket_id>/', views.get_ticket_details),
     path('api/users/<int:user_id>/profile/', views.update_user_profile),
+    path('api/tickets/search/', views.search_tickets),
 ]

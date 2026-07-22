@@ -21,3 +21,26 @@ def is_valid_username(username):
         
     pattern = r"^[a-zA-Z0-9][a-zA-Z0-9\.\-\_]*[a-zA-Z0-9]$"
     return bool(re.match(pattern, username))
+
+from django.db import connection
+
+def release_expired_reservations():
+
+    with connection.cursor() as cursor:
+        restore_sql = """
+            UPDATE tickets t
+            SET remaining_capacity = t.remaining_capacity + r.quantity
+            FROM reservations r
+            WHERE r.ticket_id = t.ticket_id
+              AND r.reservation_status = 'Pending'
+              AND r.created_at < NOW() - INTERVAL '10 minutes';
+        """
+        cursor.execute(restore_sql)
+        
+        cancel_sql = """
+            UPDATE reservations
+            SET reservation_status = 'Canceled'
+            WHERE reservation_status = 'Pending'
+              AND created_at < NOW() - INTERVAL '10 minutes';
+        """
+        cursor.execute(cancel_sql)

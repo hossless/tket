@@ -1,6 +1,7 @@
 from django.db import connection
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from core.utils import release_expired_reservations
 
 # API 6: Get Ticket Details
     # Retrieves exact details for a specific ticket based on its ID,
@@ -8,6 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 def get_ticket_details(request, ticket_id):
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed. Use GET."}, status=405)
+
+    release_expired_reservations()
 
     with connection.cursor() as cursor:
         sql = """

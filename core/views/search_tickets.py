@@ -2,6 +2,7 @@ import json
 import redis
 from django.db import connection
 from django.http import JsonResponse
+from core.utils import release_expired_reservations
 
 cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
 
@@ -11,6 +12,8 @@ cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
 def search_tickets(request):
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed. Use GET."}, status=405)
+
+    release_expired_reservations()
 
     query_params = request.GET.dict()
     

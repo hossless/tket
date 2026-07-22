@@ -6,6 +6,7 @@ from django.db import connection
 from django.db import transaction
 from django.http import JsonResponse
 from django.db import IntegrityError
+from core.utils import release_expired_reservations
 from django.views.decorators.csrf import csrf_exempt
 
 cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
@@ -17,6 +18,8 @@ cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
 def reserve_ticket(request):
     if request.method != 'POST':
         return JsonResponse({"error": "Method not allowed. Use POST."}, status=405)
+
+    release_expired_reservations()
 
     try:
         body = json.loads(request.body)

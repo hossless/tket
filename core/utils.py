@@ -33,14 +33,14 @@ def release_expired_reservations():
             FROM reservations r
             WHERE r.ticket_id = t.ticket_id
               AND r.reservation_status = 'Pending'
-              AND r.created_at < NOW() - INTERVAL '10 minutes';
+              AND r.reserved_at < NOW() - INTERVAL '10 minutes';
         """
         cursor.execute(restore_sql)
         
         cancel_sql = """
             UPDATE reservations
-            SET reservation_status = 'Canceled'
+            SET reservation_status = 'Expired'
             WHERE reservation_status = 'Pending'
-              AND created_at < NOW() - INTERVAL '10 minutes';
+              AND reserved_at < NOW() - INTERVAL '10 minutes';
         """
         cursor.execute(cancel_sql)

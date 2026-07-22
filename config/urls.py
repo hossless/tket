@@ -20,9 +20,9 @@ from core import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/cities-venues/', views.get_cities_and_venues_list),
-    path('api/tickets/<int:ticket_id>/', views.get_ticket_details),
     path('api/users/<int:user_id>/profile/', views.update_user_profile),
+    path('api/tickets/cities-venues/', views.get_cities_and_venues_list),
     path('api/tickets/search/', views.search_tickets),
+    path('api/tickets/<int:ticket_id>/', views.get_ticket_details),
     path('api/tickets/reserve/', views.reserve_ticket),
 ]

@@ -86,13 +86,13 @@ INSERT INTO payments (reservation_id, amount, method, transaction_status, tracki
 
 -- REPORTS
 INSERT INTO reports (user_id, reservation_id, report_type, description, reply, report_status, reported_at) VALUES
-(3, 1, 'General', 'Where exactly is the VIP entrance for the Bernabeu?', 'It is at Gate 4, Mr. Messi.', 'Answered', '2026-09-02 10:00:00'),
+(3, 1, 'General', 'Where exactly is the VIP entrance for the Bernabeu?', 'It is at Gate 4, Mr. Messi.', 'Resolved', '2026-09-02 10:00:00'),
 (4, 2, 'Technical', 'QR Code not loading on my phone.', NULL, 'Waiting', '2026-09-06 14:00:00'),
-(9, 6, 'Complaint', 'Why was my AC Milan ticket canceled?! I am Zlatan!', 'Sorry Zlatan, Admin Collina rejected it.', 'Answered', '2023-04-01 16:30:00'),
+(9, 6, 'Complaint', 'Why was my AC Milan ticket canceled?! I am Zlatan!', 'Sorry Zlatan, Admin Collina rejected it.', 'Resolved', '2023-04-01 16:30:00'),
 (10, 7, 'Complaint', 'Collina canceled my Bulls ticket too, unfair.', NULL, 'Waiting', '2026-09-15 12:30:00'),
-(6, NULL, 'Technical', 'The website crashed when I tried to log in yesterday.', 'We have fixed the server issue.', 'Answered', '2026-09-13 09:00:00'),
+(6, NULL, 'Technical', 'The website crashed when I tried to log in yesterday.', 'We have fixed the server issue.', 'Resolved', '2026-09-13 09:00:00'),
 (8, NULL, 'General', 'Hi, I haven''t bought anything yet, just browsing.', NULL, 'Waiting', '2026-10-01 12:00:00'),
-(12, 9, 'General', 'Are drums allowed in the Hala Azoty arena?', 'Yes, small drums are permitted.', 'Answered', '2026-09-21 14:00:00'),
-(5, 12, 'Refund', 'I canceled my ticket, when do I get my money back?', 'Refund processed, allow 3 days.', 'Answered', '2026-09-26 10:30:00'),
+(12, 9, 'General', 'Are drums allowed in the Hala Azoty arena?', 'Yes, small drums are permitted.', 'Resolved', '2026-09-21 14:00:00'),
+(5, 12, 'Refund', 'I canceled my ticket, when do I get my money back?', 'Refund processed, allow 3 days.', 'Resolved', '2026-09-26 10:30:00'),
 (11, 8, 'Complaint', 'I wanted courtside seats, you gave me row E.', NULL, 'Waiting', '2023-11-01 10:30:00'),
-(7, 5, 'Technical', 'Payment is stuck on pending, please help.', 'Please check with your bank.', 'Answered', '2026-10-02 08:30:00');
+(7, 5, 'Technical', 'Payment is stuck on pending, please help.', 'Please check with your bank.', 'Resolved', '2026-10-02 08:30:00');

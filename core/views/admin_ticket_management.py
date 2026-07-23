@@ -43,6 +43,12 @@ def admin_ticket_management(request, admin_user_id):
         if not status:
             return JsonResponse({"error": "status is required for reservation updates."}, status=400)
 
+        VALID_RES_STATUSES = ["Pending", "Confirmed", "Canceled", "Expired", "Failed"]
+        if status not in VALID_RES_STATUSES:
+            return JsonResponse({
+                "error": f"Invalid reservation status. Allowed values: {', '.join(VALID_RES_STATUSES)}"
+            }, status=400)
+    
         with transaction.atomic():
             with connection.cursor() as cursor:
                 sql_get_res = """
@@ -98,7 +104,13 @@ def admin_ticket_management(request, admin_user_id):
 
     elif target_type == "report":
         reply = body.get("reply")
-        report_status = body.get("status", "Answered")
+        report_status = body.get("status", "Resolved")
+
+        VALID_REP_STATUSES = ["Waiting", "Resolved"]
+        if report_status not in VALID_REP_STATUSES:
+            return JsonResponse({
+                "error": f"Invalid report status. Allowed values: {', '.join(VALID_REP_STATUSES)}"
+            }, status=400)
 
         if not reply:
             return JsonResponse({"error": "reply text is required for report updates."}, status=400)

@@ -1,4 +1,6 @@
 import re
+from datetime import datetime
+from django.db import connection
 
 def is_valid_email(email):
     pattern = r"^[a-zA-Z0-9]+(?:[\.\_\+\-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[\.\-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$"
@@ -22,8 +24,6 @@ def is_valid_username(username):
     pattern = r"^[a-zA-Z0-9][a-zA-Z0-9\.\-\_]*[a-zA-Z0-9]$"
     return bool(re.match(pattern, username))
 
-from django.db import connection
-
 def release_expired_reservations():
 
     with connection.cursor() as cursor:
@@ -44,3 +44,25 @@ def release_expired_reservations():
               AND reserved_at < NOW() - INTERVAL '10 minutes';
         """
         cursor.execute(cancel_sql)
+        
+def calculate_cancellation_penalty(ticket_datetime, amount):
+    now = datetime.now()
+    if ticket_datetime.tzinfo:
+        now = now.astimezone(ticket_datetime.tzinfo)
+
+    time_diff = ticket_datetime - now
+    hours_remaining = time_diff.total_seconds() / 3600
+
+    if hours_remaining <= 0:
+        penalty_percent = 100
+    elif hours_remaining < 6:
+        penalty_percent = 50
+    elif hours_remaining < 24:
+        penalty_percent = 30
+    else:
+        penalty_percent = 10
+        
+    penalty_amount = float(amount) * (penalty_percent / 100)
+    refund_amount = float(amount) - penalty_amount
+    
+    return penalty_percent, round(penalty_amount, 2), round(refund_amount, 2)

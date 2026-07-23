@@ -27,4 +27,5 @@ urlpatterns = [
     path('api/tickets/reserve/', views.reserve_ticket),
     path('api/tickets/pay/', views.payment_for_ticket),
     path('api/tickets/reservations/<int:reservation_id>/penalty/', views.check_cancellation_penalty),
+    path('api/admin/<int:admin_user_id>/manage/', views.admin_ticket_management),
 ]

@@ -8,6 +8,10 @@ from core.utils import release_expired_reservations
 
 cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
 
+# API 8: Payment for Ticket
+    # Processes ticket payment by verifying active Redis TTL locks, recording transaction details
+    # in PostgreSQL within an atomic transaction, updating reservation status to 'Confirmed',
+    # and releasing the temporary Redis lock upon completion.
 @csrf_exempt
 def payment_for_ticket(request):
     if request.method != 'POST':

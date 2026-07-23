@@ -2,7 +2,7 @@ import json
 from django.http import JsonResponse
 from django.db import connection, transaction
 from django.views.decorators.csrf import csrf_exempt
-from core.utils import release_expired_reservations
+from core.utils import release_expired_reservations, invalidate_ticket_caches
 
 # API 10/14: Admin Ticket & Report Management
     # Allows system administrators/support staff to update reservation statuses
@@ -80,6 +80,7 @@ def admin_ticket_management(request, admin_user_id):
                         WHERE ticket_id = %s;
                     """
                     cursor.execute(sql_restore, [quantity, ticket_id])
+                    invalidate_ticket_caches()
 
         response_data = {
             "reservation_id": target_id,

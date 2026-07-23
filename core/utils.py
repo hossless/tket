@@ -1,6 +1,9 @@
 import re
+import redis
 from datetime import datetime
 from django.db import connection
+
+cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
 
 def is_valid_email(email):
     pattern = r"^[a-zA-Z0-9]+(?:[\.\_\+\-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[\.\-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$"
@@ -25,7 +28,6 @@ def is_valid_username(username):
     return bool(re.match(pattern, username))
 
 def release_expired_reservations():
-
     with connection.cursor() as cursor:
         restore_sql = """
             UPDATE tickets t
@@ -37,14 +39,17 @@ def release_expired_reservations():
         """
         cursor.execute(restore_sql)
         
+        if cursor.rowcount > 0:
+            invalidate_ticket_caches()
+            
         cancel_sql = """
             UPDATE reservations
             SET reservation_status = 'Expired'
             WHERE reservation_status = 'Pending'
               AND reserved_at < NOW() - INTERVAL '10 minutes';
         """
-        cursor.execute(cancel_sql)
-        
+        cursor.execute(cancel_sql)  
+              
 def calculate_cancellation_penalty(ticket_datetime, amount):
     now = datetime.now()
     if ticket_datetime.tzinfo:
@@ -66,3 +71,8 @@ def calculate_cancellation_penalty(ticket_datetime, amount):
     refund_amount = float(amount) - penalty_amount
     
     return penalty_percent, round(penalty_amount, 2), round(refund_amount, 2)
+
+def invalidate_ticket_caches():
+    keys = cache.keys("tickets_search:*")
+    if keys:
+        cache.delete(*keys)

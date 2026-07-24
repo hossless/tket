@@ -1,6 +1,9 @@
 import re
+import jwt
 import redis
-from datetime import datetime
+import random
+import datetime
+from django.conf import settings
 from django.db import connection
 
 cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
@@ -13,19 +16,53 @@ def is_valid_phone(phone_number):
     digit_count = sum(c.isdigit() for c in phone_number)
     if not (7 <= digit_count <= 15):
         return False
-    
     pattern = r"^\+?[\d\s\-\(\)]+$"
     return bool(re.match(pattern, phone_number))
 
 def is_valid_username(username):
     if not (3 <= len(username) <= 30):
         return False
-        
     if ".." in username or "--" in username or "__" in username:
         return False
-        
     pattern = r"^[a-zA-Z0-9][a-zA-Z0-9\.\-\_]*[a-zA-Z0-9]$"
     return bool(re.match(pattern, username))
+
+def detect_contact_type(contact_info):
+    if is_valid_email(contact_info):
+        return 'email'
+    if is_valid_phone(contact_info):
+        return 'phone_number'
+    return None
+
+def is_strong_password(password):
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long."
+    
+    if not re.search(r"[A-Z]", password):
+        return False, "Password must contain at least one uppercase letter."
+        
+    if not re.search(r"[a-z]", password):
+        return False, "Password must contain at least one lowercase letter."
+        
+    if not re.search(r"\d", password):
+        return False, "Password must contain at least one number."
+        
+    if not re.search(r"[@$!%*?&#^_-]", password):
+        return False, "Password must contain at least one special character (e.g., @, $, !, %, *, ?, &, #)."
+        
+    return True, ""
+
+def generate_user_token(user_id, role='Spectator'):
+    payload = {
+        'user_id': user_id,
+        'role': role,
+        'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1),
+        'iat': datetime.datetime.now(datetime.timezone.utc)
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+
+def generate_otp():
+    return str(random.randint(100000, 999999))
 
 def release_expired_reservations():
     with connection.cursor() as cursor:

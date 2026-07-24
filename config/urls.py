@@ -20,6 +20,7 @@ from core import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/auth/login/', views.login),
     path('api/auth/signup/request/', views.request_signup_otp),
     path('api/auth/signup/verify/', views.verify_signup_otp),
     path('api/users/<int:user_id>/profile/', views.update_user_profile),

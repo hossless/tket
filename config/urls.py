@@ -31,4 +31,5 @@ urlpatterns = [
     path('api/tickets/pay/', views.payment_for_ticket),
     path('api/tickets/reservations/<int:reservation_id>/penalty/', views.check_cancellation_penalty),
     path('api/admin/manage/', views.admin_ticket_management),
+    path('api/user/reservations/', views.get_user_bookings),
 ]

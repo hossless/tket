@@ -1,13 +1,16 @@
 from django.db import connection
 from django.http import JsonResponse
-from core.utils import calculate_cancellation_penalty
+from core.utils import calculate_cancellation_penalty, jwt_required
 
-# API 9: Chceck Cancellation Penalty
+# API 9: Check Cancellation Penalty
     # Calculates potential cancellation penalties and eligible refund amounts for a confirmed
     # reservation based on remaining time until event kickoff using core utility rules.
+@jwt_required
 def check_cancellation_penalty(request, reservation_id):
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed. Use GET."}, status=405)    
+
+    user_id = request.user_id
 
     with connection.cursor() as cursor:
         sql = """
@@ -15,13 +18,14 @@ def check_cancellation_penalty(request, reservation_id):
             FROM reservations r
             JOIN tickets t ON t.ticket_id = r.ticket_id
             WHERE r.reservation_id = %s
+              AND r.user_id = %s
               AND r.reservation_status = 'Confirmed';
         """
-        cursor.execute(sql, [reservation_id])
+        cursor.execute(sql, [reservation_id, user_id])
         raw_data = cursor.fetchone()
     
     if not raw_data:
-        return JsonResponse({"error": "Confirmed reservation not found."}, status=404)
+        return JsonResponse({"error": "Confirmed reservation not found or access denied."}, status=404)
     
     date_time, quantity, price = raw_data
     amount = quantity * price

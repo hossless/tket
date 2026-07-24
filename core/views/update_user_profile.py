@@ -5,7 +5,11 @@ from django.db import connection
 from django.http import JsonResponse
 from django.db import IntegrityError
 from django.views.decorators.csrf import csrf_exempt
-from core.utils import is_valid_email, is_valid_phone, is_valid_username
+from core.utils import (
+    is_valid_email,
+    is_valid_phone,
+    is_valid_username,
+    jwt_required)
 
 cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
 
@@ -13,7 +17,8 @@ cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
     # Updates profile details for a given user using dynamic SQL fields
     # and syncs the updated profile directly into the Redis cache.
 @csrf_exempt
-def update_user_profile(request, user_id):
+@jwt_required
+def update_user_profile(request):
     if request.method != 'PATCH':
         return JsonResponse({"error": "Method not allowed. Use PATCH."}, status=405)
 
@@ -21,6 +26,8 @@ def update_user_profile(request, user_id):
         body = json.loads(request.body)
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON body."}, status=400)
+
+    user_id = request.user_id
 
     allowed_columns = ["first_name", "last_name", "username", "phone_number", "email", "city"]
     set_clauses = []

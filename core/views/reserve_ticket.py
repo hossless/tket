@@ -6,7 +6,7 @@ from django.db import connection
 from django.db import transaction
 from django.http import JsonResponse
 from django.db import IntegrityError
-from core.utils import release_expired_reservations, invalidate_ticket_caches
+from core.utils import release_expired_reservations, invalidate_ticket_caches, jwt_required
 from django.views.decorators.csrf import csrf_exempt
 
 cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
@@ -15,6 +15,7 @@ cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
     # Handles ticket reservation by checking capacity, deducting quantity within an atomic
     # transaction, creating a pending reservation record, and setting a 10-minute Redis lock.
 @csrf_exempt
+@jwt_required
 def reserve_ticket(request):
     if request.method != 'POST':
         return JsonResponse({"error": "Method not allowed. Use POST."}, status=405)
@@ -26,13 +27,13 @@ def reserve_ticket(request):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON body."}, status=400)
 
-    user_id = body.get('user_id')
+    user_id = request.user_id 
     ticket_id = body.get('ticket_id')
     quantity = body.get('quantity', 1)
     seat_info = body.get('seat_info')
 
-    if not user_id or not ticket_id:
-        return JsonResponse({"error": "Both user_id and ticket_id are required."}, status=400)
+    if not ticket_id:
+        return JsonResponse({"error": "ticket_id is required."}, status=400)
 
     try:
         quantity = int(quantity)
@@ -88,4 +89,4 @@ def reserve_ticket(request):
         }, status=201)
 
     except IntegrityError:
-        return JsonResponse({"error": "User does not exist or database constraint failed."}, status=400)
+        return JsonResponse({"error": "Database constraint failed."}, status=400)

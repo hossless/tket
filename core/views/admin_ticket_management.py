@@ -2,17 +2,24 @@ import json
 from django.http import JsonResponse
 from django.db import connection, transaction
 from django.views.decorators.csrf import csrf_exempt
-from core.utils import release_expired_reservations, invalidate_ticket_caches
+from core.utils import release_expired_reservations, invalidate_ticket_caches, jwt_required
 
-# API 10/14: Admin Ticket & Report Management
+# API 10: Admin Ticket & Report Management
     # Allows system administrators/support staff to update reservation statuses
     # (tracking who canceled them) or reply to user support reports.
 @csrf_exempt
-def admin_ticket_management(request, admin_user_id):
+@jwt_required
+def admin_ticket_management(request):
     if request.method != 'PATCH':
         return JsonResponse({"error": "Method not allowed. Use PATCH."}, status=405)
 
     release_expired_reservations()
+
+    admin_user_id = request.user_id
+    user_role = getattr(request, 'user_role', 'Spectator')
+
+    if user_role not in ['Admin', 'Support']:
+        return JsonResponse({"error": "Access denied. Admin or Support role required."}, status=403)
 
     try:
         body = json.loads(request.body)
@@ -24,19 +31,6 @@ def admin_ticket_management(request, admin_user_id):
 
     if not target_type or not target_id:
         return JsonResponse({"error": "Both target_type and target_id are required."}, status=400)
-
-    sql_admin = """
-        SELECT user_id 
-        FROM users 
-        WHERE user_id = %s 
-          AND role IN ('Admin', 'Support');
-    """
-    with connection.cursor() as cursor:
-        cursor.execute(sql_admin, [admin_user_id])
-        admin_row = cursor.fetchone()
-
-    if not admin_row:
-        return JsonResponse({"error": "Access denied. Admin or Support role required."}, status=403)
 
     if target_type == "reservation":
         status = body.get("status")

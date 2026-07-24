@@ -3,8 +3,10 @@ import jwt
 import redis
 import random
 import datetime
+from functools import wraps
 from django.db import connection
 from django.conf import settings
+from django.http import JsonResponse
 from django.core.mail import send_mail
 
 cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
@@ -61,6 +63,31 @@ def generate_user_token(user_id, role='Spectator'):
         'iat': datetime.datetime.now(datetime.timezone.utc)
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+
+def jwt_required(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return JsonResponse({"error": "Missing or invalid Authorization header. Expected 'Bearer <token>'."}, status=401)
+            
+        token = auth_header.split(' ')[1]
+        
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            
+            request.user_id = payload.get('user_id')
+            request.user_role = payload.get('role')
+            
+        except jwt.ExpiredSignatureError:
+            return JsonResponse({"error": "Token has expired. Please log in again."}, status=401)
+        except jwt.InvalidTokenError:
+            return JsonResponse({"error": "Invalid token."}, status=401)
+            
+        return view_func(request, *args, **kwargs)
+        
+    return _wrapped_view
 
 def generate_otp():
     return str(random.randint(100000, 999999))

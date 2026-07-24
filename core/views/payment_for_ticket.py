@@ -4,7 +4,7 @@ import redis
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import connection, transaction, IntegrityError
-from core.utils import release_expired_reservations
+from core.utils import release_expired_reservations, jwt_required
 
 cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
 
@@ -13,6 +13,7 @@ cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
     # in PostgreSQL within an atomic transaction, updating reservation status to 'Confirmed',
     # and releasing the temporary Redis lock upon completion.
 @csrf_exempt
+@jwt_required
 def payment_for_ticket(request):
     if request.method != 'POST':
         return JsonResponse({"error": "Method not allowed. Use POST."}, status=405)
@@ -24,6 +25,7 @@ def payment_for_ticket(request):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON body."}, status=400)
 
+    user_id = request.user_id
     reservation_id = body.get('reservation_id')
     method = body.get('method', 'Credit Card')
 
@@ -43,13 +45,14 @@ def payment_for_ticket(request):
                     FROM tickets t
                     JOIN reservations r ON t.ticket_id = r.ticket_id
                     WHERE r.reservation_id = %s
+                      AND r.user_id = %s
                       AND r.reservation_status = 'Pending';
                 """
-                cursor.execute(sql_check, [reservation_id])
+                cursor.execute(sql_check, [reservation_id, user_id])
                 reservation_row = cursor.fetchone()
 
                 if not reservation_row:
-                    return JsonResponse({"error": "Pending reservation not found."}, status=404)
+                    return JsonResponse({"error": "Pending reservation not found or access denied."}, status=404)
 
                 quantity = reservation_row[0]
                 price = reservation_row[1]

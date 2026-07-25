@@ -32,4 +32,5 @@ urlpatterns = [
     path('api/tickets/reservations/<int:reservation_id>/penalty/', views.check_cancellation_penalty),
     path('api/admin/manage/', views.admin_ticket_management),
     path('api/user/reservations/', views.get_user_bookings),
+    path('api/user/reservations/cancel/', views.cancel_ticket_and_refund),
 ]

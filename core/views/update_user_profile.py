@@ -9,7 +9,8 @@ from core.utils import (
     is_valid_email,
     is_valid_phone,
     is_valid_username,
-    jwt_required)
+    jwt_required
+)
 
 cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
 
@@ -35,7 +36,10 @@ def update_user_profile(request):
 
     for key, value in body.items():
         if key in allowed_columns:
-            str_value = str(value).strip()
+            if not isinstance(value, str):
+                return JsonResponse({"error": f"Field '{key}' must be a string."}, status=400)
+
+            str_value = value.strip()
             if str_value == "":
                 return JsonResponse({"error": f"Field '{key}' cannot be empty."}, status=400)
 
@@ -54,6 +58,7 @@ def update_user_profile(request):
                 str_value = re.sub(r"[^\d\+]", "", str_value)
                 
             values.append(str_value)
+
     if not set_clauses:
         return JsonResponse({"error": "No valid fields provided for update."}, status=400)
 

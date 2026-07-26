@@ -39,6 +39,8 @@ def reserve_ticket(request):
         quantity = int(quantity)
         if quantity <= 0:
             return JsonResponse({"error": "Quantity must be a positive integer."}, status=400)
+        if quantity > 10:
+            return JsonResponse({"error": "You can only reserve up to 10 tickets per transaction."}, status=400)
     except (ValueError, TypeError):
         return JsonResponse({"error": "Quantity must be a valid integer."}, status=400)
 
@@ -49,14 +51,22 @@ def reserve_ticket(request):
     try:
         with transaction.atomic():
             with connection.cursor() as cursor:
-                sql_check = "SELECT remaining_capacity FROM tickets WHERE ticket_id = %s;"
+                sql_check = """
+                    SELECT remaining_capacity, (ticket_date_time < CURRENT_TIMESTAMP) as is_past 
+                    FROM tickets 
+                    WHERE ticket_id = %s 
+                    FOR UPDATE;
+                """
                 cursor.execute(sql_check, [ticket_id])
                 ticket_row = cursor.fetchone()
 
                 if not ticket_row:
                     return JsonResponse({"error": "Ticket not found."}, status=404)
 
-                remaining_capacity = ticket_row[0]
+                remaining_capacity, is_past = ticket_row
+
+                if is_past:
+                    return JsonResponse({"error": "Cannot reserve tickets for past events."}, status=403)
 
                 if quantity > remaining_capacity:
                     return JsonResponse({"error": "Not enough tickets available."}, status=400)

@@ -59,16 +59,21 @@ def request_signup_otp(request):
         if cursor.fetchone():
             return JsonResponse({"error": "Username or contact info is already registered."}, status=409)
 
+    if cache.exists(f"otp_cooldown:{contact_info}"):
+        return JsonResponse({"error": "Please wait 60 seconds before requesting another OTP."}, status=429)
+
     hashed_password = make_password(password)
     otp = generate_otp()
     
     user_data = {
         "username": username,
         "password_hash": hashed_password,
-        "otp": otp
+        "otp": otp,
+        "attempts": 0
     }
     
     cache.set(f"pending_user:{contact_info}", json.dumps(user_data), ex=120)
+    cache.set(f"otp_cooldown:{contact_info}", "LOCKED", ex=60)
 
     send_otp(contact_info, contact_type, otp)
 
@@ -100,10 +105,18 @@ def verify_signup_otp(request):
     username = cache_data.get('username')
     password_hash = cache_data.get('password_hash')
     sent_otp = cache_data.get('otp')
+    attempts = cache_data.get('attempts', 0)
+    
+    if attempts >= 3:
+        cache.delete(f"pending_user:{contact_info}")
+        return JsonResponse({"error": "Too many failed attempts. Please request a new OTP."}, status=403)
     
     if str(entered_otp) != str(sent_otp):
-        return JsonResponse({"error": "OTP does not match."}, status=400)
-        
+        cache_data['attempts'] = attempts + 1
+        ttl = cache.ttl(f"pending_user:{contact_info}")
+        if ttl > 0:
+            cache.set(f"pending_user:{contact_info}", json.dumps(cache_data), ex=ttl)
+        return JsonResponse({"error": f"OTP does not match. You have {3 - cache_data['attempts']} attempts left."}, status=400)
                 
     contact_type = detect_contact_type(contact_info)
     if not contact_type:
@@ -136,6 +149,5 @@ def verify_signup_otp(request):
             "token": token
         }, status=201)
 
-    except IntegrityError as e:
+    except IntegrityError:
         return JsonResponse({"error": "Database constraint violation."}, status=400)
-    

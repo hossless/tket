@@ -26,11 +26,20 @@ def payment_for_ticket(request):
         return JsonResponse({"error": "Invalid JSON body."}, status=400)
 
     user_id = request.user_id
-    reservation_id = body.get('reservation_id')
+    raw_reservation_id = body.get('reservation_id')
     method = body.get('method', 'Credit Card')
 
-    if not reservation_id:
+    if not raw_reservation_id:
         return JsonResponse({"error": "reservation_id is required."}, status=400)
+
+    try:
+        reservation_id = int(raw_reservation_id)
+    except (ValueError, TypeError):
+        return JsonResponse({"error": "reservation_id must be a valid integer."}, status=400)
+
+    allowed_methods = ['Credit Card', 'PayPal', 'Crypto', 'Bank Transfer', 'Wallet']
+    if method not in allowed_methods:
+        return JsonResponse({"error": f"Invalid payment method. Allowed methods: {', '.join(allowed_methods)}"}, status=400)
 
     cache_data = cache.get(f"reservation_lock:{reservation_id}")
     
@@ -46,7 +55,8 @@ def payment_for_ticket(request):
                     JOIN reservations r ON t.ticket_id = r.ticket_id
                     WHERE r.reservation_id = %s
                       AND r.user_id = %s
-                      AND r.reservation_status = 'Pending';
+                      AND r.reservation_status = 'Pending'
+                    FOR UPDATE;
                 """
                 cursor.execute(sql_check, [reservation_id, user_id])
                 reservation_row = cursor.fetchone()
@@ -56,7 +66,7 @@ def payment_for_ticket(request):
 
                 quantity = reservation_row[0]
                 price = reservation_row[1]
-                amount = float(quantity * price)
+                amount = round(float(quantity * price), 2)
                 
                 tracking_code = f"TRK-{uuid.uuid4().hex[:10].upper()}"
                 

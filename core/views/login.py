@@ -25,11 +25,11 @@ def login(request):
         return JsonResponse({"error": "Login identifier and password are required."}, status=400)
 
     login_method = detect_contact_type(login_identifier)
-    if login_method == None:
+    if login_method is None:
         login_method = "username"
     
     sql = f"""
-        SELECT user_id, password_hash, role
+        SELECT user_id, password_hash, role, account_status
         FROM users 
         WHERE {login_method} = %s;
     """
@@ -39,12 +39,15 @@ def login(request):
         raw_data = cursor.fetchone()
         
         if not raw_data:
-            return JsonResponse({"error": "User not found."}, status=404)
+            return JsonResponse({"error": "Invalid login credentials."}, status=401)
 
-    user_id, password_hash, role = raw_data
+    user_id, password_hash, role, account_status = raw_data
+
+    if account_status != 'Active':
+        return JsonResponse({"error": "Account is suspended or banned. Please contact support."}, status=403)
 
     if not check_password(raw_password, password_hash):
-        return JsonResponse({"error": "Invalid credentials."}, status=401)
+        return JsonResponse({"error": "Invalid login credentials."}, status=401)
     
     token = generate_user_token(user_id, role)
     

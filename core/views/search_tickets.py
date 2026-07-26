@@ -8,35 +8,73 @@ cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
 
 # API 5: Search Tickets
     # Dynamically searches available tickets based on multi-parameter query filters,
-    # returning formatted results and caching query responses in Redis.
+    # includes pagination, fuzzy text search, availability toggles, and Redis caching.
 def search_tickets(request):
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed. Use GET."}, status=405)
 
     release_expired_reservations()
 
-    query_params = request.GET.dict()
+    allowed_keys = {
+        'sport_type', 'team', 'venue_city', 'venue_name', 
+        'category', 'min_price', 'max_price', 'start_date', 'end_date', 'sort_by',
+        'q', 'exclude_sold_out', 'page', 'limit', 'show_past'
+    }
     
-    sorted_params = sorted(query_params.items(), key=lambda x: x[0])
-    cache_items = [f"{k}={v}" for k, v in sorted_params if str(v).strip() != ""]
-    cache_key = f"tickets_search:{'&'.join(cache_items)}"
+    valid_params = {
+        k: v for k, v in request.GET.items() 
+        if k in allowed_keys and str(v).strip() != ""
+    }
+    
+    sorted_params = sorted(valid_params.items(), key=lambda x: x[0])
+    cache_items = [f"{k}={v}" for k, v in sorted_params]
+    cache_key = f"tickets_search:{'&'.join(cache_items)}" if cache_items else "tickets_search:all"
 
     cached_data = cache.get(cache_key)
     if cached_data:
-        return JsonResponse({"tickets": json.loads(cached_data), "source": "redis"}, status=200)
+        return JsonResponse({
+            "source": "Redis", 
+            "data": json.loads(cached_data)
+        }, status=200)
 
     where_clauses = []
     values = []
 
-    sport_type = request.GET.get('sport_type')
-    team = request.GET.get('team')
-    venue_city = request.GET.get('venue_city')
-    venue_name = request.GET.get('venue_name')
-    category = request.GET.get('category')
-    min_price = request.GET.get('min_price')
-    max_price = request.GET.get('max_price')
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
+    sport_type = valid_params.get('sport_type')
+    team = valid_params.get('team')
+    venue_city = valid_params.get('venue_city')
+    venue_name = valid_params.get('venue_name')
+    category = valid_params.get('category')
+    min_price = valid_params.get('min_price')
+    max_price = valid_params.get('max_price')
+    start_date = valid_params.get('start_date')
+    end_date = valid_params.get('end_date')
+    search_query = valid_params.get('q')
+    exclude_sold_out = valid_params.get('exclude_sold_out')
+    show_past = valid_params.get('show_past')
+    sort_by = valid_params.get('sort_by')
+
+    if not (show_past and str(show_past).lower() in ['true', '1']):
+        where_clauses.append("t.ticket_date_time >= CURRENT_TIMESTAMP")
+
+    try:
+        page = int(valid_params.get('page', 1))
+        limit = int(valid_params.get('limit', 20))
+        if page < 1: page = 1
+        if limit < 1 or limit > 100: limit = 20
+    except ValueError:
+        page = 1
+        limit = 20
+        
+    offset = (page - 1) * limit
+
+    if search_query:
+        where_clauses.append("(t.home_team ILIKE %s OR t.away_team ILIKE %s OR md.venue_name ILIKE %s)")
+        fuzzy_term = f"%{search_query}%"
+        values.extend([fuzzy_term, fuzzy_term, fuzzy_term])
+
+    if exclude_sold_out and str(exclude_sold_out).lower() in ['true', '1']:
+        where_clauses.append("t.remaining_capacity > 0")
 
     if sport_type:
         where_clauses.append("t.sport_type = %s")
@@ -75,22 +113,48 @@ def search_tickets(request):
         where_clauses.append("t.ticket_date_time <= %s")
         values.append(end_date)
 
-    where_sql = ""
+    where_sql = "1=1"
     if where_clauses:
-        where_sql = " AND " + " AND ".join(where_clauses)
+        where_sql = " AND ".join(where_clauses)
 
-    sql = f"""
+    sort_mapping = {
+        "price_asc": "ORDER BY t.price ASC",
+        "price_desc": "ORDER BY t.price DESC",
+        "date_asc": "ORDER BY t.ticket_date_time ASC",
+        "date_desc": "ORDER BY t.ticket_date_time DESC"
+    }
+    order_by_sql = sort_mapping.get(sort_by, "ORDER BY t.ticket_date_time ASC")
+
+    sql_count = f"""
+        SELECT COUNT(t.ticket_id)
+        FROM tickets t
+        JOIN match_details md ON t.ticket_id = md.ticket_id
+        WHERE {where_sql};
+    """
+
+    sql_data = f"""
         SELECT t.ticket_id, t.sport_type, t.home_team, t.away_team,
                t.remaining_capacity, t.total_capacity, t.venue_city,
                t.price, t.category, t.ticket_date_time, md.venue_name
         FROM tickets t
         JOIN match_details md ON t.ticket_id = md.ticket_id
-        WHERE 1=1{where_sql};
+        WHERE {where_sql}
+        {order_by_sql}
+        LIMIT %s OFFSET %s;
     """
 
-    with connection.cursor() as cursor:
-        cursor.execute(sql, values)
-        raw_data = cursor.fetchall()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(sql_count, values)
+            total_items = cursor.fetchone()[0]
+
+            values.extend([limit, offset])
+            
+            cursor.execute(sql_data, values)
+            raw_data = cursor.fetchall()
+            
+    except Exception:
+        return JsonResponse({"error": "Invalid search parameter format."}, status=400)
 
     formatted_response = []
     for row in raw_data:
@@ -107,7 +171,22 @@ def search_tickets(request):
             "ticket_date_time": str(row[9]),
             "venue_name": row[10]
         })
+        
+    total_pages = (total_items + limit - 1) // limit
 
-    cache.set(cache_key, json.dumps(formatted_response), ex=300)
+    response_data = {
+        "pagination": {
+            "total_items": total_items,
+            "total_pages": total_pages,
+            "current_page": page,
+            "limit": limit
+        },
+        "tickets": formatted_response
+    }
 
-    return JsonResponse({"tickets": formatted_response}, status=200)
+    cache.set(cache_key, json.dumps(response_data), ex=300)
+
+    return JsonResponse({
+        "source": "Database",
+        "data": response_data
+    }, status=200)

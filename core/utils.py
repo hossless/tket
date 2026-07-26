@@ -6,6 +6,7 @@ import datetime
 from functools import wraps
 from django.db import connection
 from django.conf import settings
+from django.utils import timezone
 from django.http import JsonResponse
 from django.core.mail import send_mail
 
@@ -172,9 +173,14 @@ def release_expired_reservations():
         cursor.execute(cancel_sql)  
               
 def calculate_cancellation_penalty(ticket_datetime, amount):
-    now = datetime.now()
-    if ticket_datetime.tzinfo:
-        now = now.astimezone(ticket_datetime.tzinfo)
+    now = timezone.now()
+    
+    if isinstance(ticket_datetime, str):
+        from django.utils.dateparse import parse_datetime
+        ticket_datetime = parse_datetime(ticket_datetime)
+
+    if timezone.is_naive(ticket_datetime):
+        ticket_datetime = timezone.make_aware(ticket_datetime)
 
     time_diff = ticket_datetime - now
     hours_remaining = time_diff.total_seconds() / 3600
@@ -191,7 +197,7 @@ def calculate_cancellation_penalty(ticket_datetime, amount):
     penalty_amount = float(amount) * (penalty_percent / 100)
     refund_amount = float(amount) - penalty_amount
     
-    return penalty_percent, round(penalty_amount, 2), round(refund_amount, 2)
+    return penalty_percent, round(penalty_amount, 2), round(refund_amount, 2)    
 
 def invalidate_ticket_caches():
     keys = cache.keys("tickets_search:*")

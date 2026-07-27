@@ -4,7 +4,7 @@ from core.utils import jwt_required, release_expired_reservations
 
 # API 11: Get User Bookings
     # Retrieves all reservations (including status, quantity, and
-    # ticket details) for the authenticated user.
+    # ticket details) for the authenticated user, with optional filtering.
 @jwt_required
 def get_user_bookings(request):
     if request.method != 'GET':
@@ -14,7 +14,24 @@ def get_user_bookings(request):
 
     user_id = request.user_id
 
-    sql = """
+    where_clauses = ["r.user_id = %s"]
+    values = [user_id]
+
+    status_filter = request.GET.get('status')
+    time_filter = request.GET.get('time')
+
+    if status_filter:
+        where_clauses.append("r.reservation_status = %s")
+        values.append(status_filter)
+
+    if time_filter == 'upcoming':
+        where_clauses.append("t.ticket_date_time >= CURRENT_TIMESTAMP")
+    elif time_filter == 'past':
+        where_clauses.append("t.ticket_date_time < CURRENT_TIMESTAMP")
+
+    where_sql = " AND ".join(where_clauses)
+
+    sql = f"""
         SELECT 
             r.reservation_id, r.quantity, r.reservation_status, r.seat_info,
             t.ticket_id, t.sport_type, t.home_team, t.away_team,
@@ -22,13 +39,16 @@ def get_user_bookings(request):
         FROM reservations r
         JOIN tickets t ON r.ticket_id = t.ticket_id
         LEFT JOIN match_details md ON t.ticket_id = md.ticket_id
-        WHERE r.user_id = %s
-        ORDER BY t.ticket_date_time ASC;
+        WHERE {where_sql}
+        ORDER BY t.ticket_date_time DESC;
     """
 
-    with connection.cursor() as cursor:
-        cursor.execute(sql, [user_id])
-        raw_data = cursor.fetchall()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(sql, values)
+            raw_data = cursor.fetchall()
+    except Exception:
+        return JsonResponse({"error": "Database error occurred."}, status=500)
 
     formatted_response = []
     for row in raw_data:

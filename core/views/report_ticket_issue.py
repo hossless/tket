@@ -19,18 +19,28 @@ def report_ticket_issue(request):
         return JsonResponse({"error": "Invalid JSON body."}, status=400)
 
     user_id = request.user_id 
-    description = body.get('description')
+    description = str(body.get('description', '')).strip()
     report_type = body.get('report_type')
-    reservation_id = body.get('reservation_id')
+    raw_reservation_id = body.get('reservation_id')
 
     if not description or not report_type:
         return JsonResponse({"error": "description and report_type are required."}, status=400)
 
-    valid_report_types = ["General", "Technical", "Complaint", "Refund","Bug", "Other"]
+    if len(description) > 2000:
+        return JsonResponse({"error": "Description is too long (max 2000 characters)."}, status=400)
+
+    valid_report_types = ["General", "Technical", "Complaint", "Refund", "Bug", "Other"]
     if report_type not in valid_report_types:
         return JsonResponse({
             "error": f"Invalid report_type. Allowed values: {', '.join(valid_report_types)}"
         }, status=400)
+
+    reservation_id = None
+    if raw_reservation_id not in [None, ""]:
+        try:
+            reservation_id = int(raw_reservation_id)
+        except (ValueError, TypeError):
+            return JsonResponse({"error": "reservation_id must be a valid integer."}, status=400)
 
     try:
         with connection.cursor() as cursor:
@@ -54,6 +64,8 @@ def report_ticket_issue(request):
             
     except IntegrityError:
         return JsonResponse({"error": "Database constraint violation."}, status=400)
+    except Exception:
+        return JsonResponse({"error": "Database error occurred."}, status=500)
     
     return JsonResponse({
         "message": "Report submitted successfully.",

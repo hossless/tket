@@ -25,57 +25,67 @@ def cancel_ticket_and_refund(request):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON body."}, status=400)
 
-    reservation_id = body.get("reservation_id")
+    raw_reservation_id = body.get("reservation_id")
 
-    if not reservation_id:
+    if not raw_reservation_id:
         return JsonResponse({"error": "Reservation id is required."}, status=400)
 
-    with transaction.atomic():
-        with connection.cursor() as cursor:
-            sql_get_res = """
-                SELECT t.ticket_date_time, r.quantity, t.price, t.ticket_id
-                FROM reservations r
-                JOIN tickets t ON t.ticket_id = r.ticket_id
-                WHERE r.reservation_id = %s
-                  AND r.user_id = %s
-                  AND r.reservation_status = 'Confirmed';
-            """
-            cursor.execute(sql_get_res, [reservation_id, user_id])
-            res_row = cursor.fetchone()
+    try:
+        reservation_id = int(raw_reservation_id)
+    except (ValueError, TypeError):
+        return JsonResponse({"error": "Reservation ID must be a valid integer."}, status=400)
 
-            if not res_row:
-                return JsonResponse({"error": "Confirmed reservation not found or access denied."}, status=404)
+    try:
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                sql_get_res = """
+                    SELECT t.ticket_date_time, r.quantity, t.price, t.ticket_id
+                    FROM reservations r
+                    JOIN tickets t ON t.ticket_id = r.ticket_id
+                    WHERE r.reservation_id = %s
+                      AND r.user_id = %s
+                      AND r.reservation_status = 'Confirmed'
+                    FOR UPDATE;
+                """
+                cursor.execute(sql_get_res, [reservation_id, user_id])
+                res_row = cursor.fetchone()
 
-            date_time, quantity, price, ticket_id = res_row
-            amount = quantity * price
-            
-            penalty_percent, penalty_amount, refund_amount = calculate_cancellation_penalty(date_time, amount)
+                if not res_row:
+                    return JsonResponse({"error": "Confirmed reservation not found or access denied."}, status=404)
 
-            sql_update_res = """
-                UPDATE reservations
-                SET reservation_status = 'Canceled', canceled_by = %s
-                WHERE reservation_id = %s;
-            """
-            cursor.execute(sql_update_res, [user_id, reservation_id])
-            
-            sql_restore = """
-                UPDATE tickets
-                SET remaining_capacity = remaining_capacity + %s
-                WHERE ticket_id = %s;
-            """
-            cursor.execute(sql_restore, [quantity, ticket_id])
-            
-    invalidate_ticket_caches()
+                date_time, quantity, price, ticket_id = res_row
+                amount = round(float(quantity * price), 2)
+                
+                penalty_percent, penalty_amount, refund_amount = calculate_cancellation_penalty(date_time, amount)
 
-    response_data = {
-        "reservation_id": reservation_id,
-        "ticket_id": ticket_id,
-        "penalty_percent": penalty_percent,
-        "penalty_amount": penalty_amount,
-        "refund_amount": refund_amount
-    }
+                sql_update_res = """
+                    UPDATE reservations
+                    SET reservation_status = 'Canceled', canceled_by = %s
+                    WHERE reservation_id = %s;
+                """
+                cursor.execute(sql_update_res, [user_id, reservation_id])
+                
+                sql_restore = """
+                    UPDATE tickets
+                    SET remaining_capacity = remaining_capacity + %s
+                    WHERE ticket_id = %s;
+                """
+                cursor.execute(sql_restore, [quantity, ticket_id])
+                
+        invalidate_ticket_caches()
 
-    return JsonResponse({
-        "message": "Reservation canceled successfully.",
-        "cancellation_details": response_data
-    }, status=200)
+        response_data = {
+            "reservation_id": reservation_id,
+            "ticket_id": ticket_id,
+            "penalty_percent": penalty_percent,
+            "penalty_amount": penalty_amount,
+            "refund_amount": refund_amount
+        }
+
+        return JsonResponse({
+            "message": "Reservation canceled successfully.",
+            "cancellation_details": response_data
+        }, status=200)
+
+    except Exception:
+        return JsonResponse({"error": "Database error occurred while canceling reservation."}, status=500)

@@ -27,10 +27,15 @@ def admin_ticket_management(request):
         return JsonResponse({"error": "Invalid JSON body."}, status=400)
 
     target_type = body.get("target_type")
-    target_id = body.get("target_id")
+    raw_target_id = body.get("target_id")
 
-    if not target_type or not target_id:
+    if not target_type or not raw_target_id:
         return JsonResponse({"error": "Both target_type and target_id are required."}, status=400)
+
+    try:
+        target_id = int(raw_target_id)
+    except (ValueError, TypeError):
+        return JsonResponse({"error": "target_id must be a valid integer."}, status=400)
 
     if target_type == "reservation":
         status = body.get("status")
@@ -43,58 +48,68 @@ def admin_ticket_management(request):
                 "error": f"Invalid reservation status. Allowed values: {', '.join(VALID_RES_STATUSES)}"
             }, status=400)
     
-        with transaction.atomic():
-            with connection.cursor() as cursor:
-                sql_get_res = """
-                    SELECT reservation_status, quantity, ticket_id 
-                    FROM reservations 
-                    WHERE reservation_id = %s;
-                """
-                cursor.execute(sql_get_res, [target_id])
-                res_row = cursor.fetchone()
-
-                if not res_row:
-                    return JsonResponse({"error": "Reservation not found."}, status=404)
-
-                old_status, quantity, ticket_id = res_row
-
-                if status == "Canceled":
-                    sql_update_res = """
-                        UPDATE reservations
-                        SET reservation_status = %s, canceled_by = %s
-                        WHERE reservation_id = %s;
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    sql_get_res = """
+                        SELECT reservation_status, quantity, ticket_id 
+                        FROM reservations 
+                        WHERE reservation_id = %s
+                        FOR UPDATE;
                     """
-                    cursor.execute(sql_update_res, [status, admin_user_id, target_id])
-                else:
-                    sql_update_res = """
-                        UPDATE reservations
-                        SET reservation_status = %s
-                        WHERE reservation_id = %s;
-                    """
-                    cursor.execute(sql_update_res, [status, target_id])
+                    cursor.execute(sql_get_res, [target_id])
+                    res_row = cursor.fetchone()
 
-                if status == "Canceled" and old_status != "Canceled":
-                    sql_restore = """
-                        UPDATE tickets
-                        SET remaining_capacity = remaining_capacity + %s
-                        WHERE ticket_id = %s;
-                    """
-                    cursor.execute(sql_restore, [quantity, ticket_id])
-                    invalidate_ticket_caches()
+                    if not res_row:
+                        return JsonResponse({"error": "Reservation not found."}, status=404)
 
-        response_data = {
-            "reservation_id": target_id,
-            "status": status,
-            "ticket_id": ticket_id
-        }
-        
-        if status == "Canceled":
-            response_data["canceled_by"] = admin_user_id
+                    old_status, quantity, ticket_id = res_row
 
-        return JsonResponse({
-            "message": "Reservation updated successfully.",
-            "reservation": response_data
-        }, status=200)
+                    if old_status in ["Canceled", "Expired", "Failed"] and status not in ["Canceled", "Expired", "Failed"]:
+                        return JsonResponse({
+                            "error": "Cannot reactivate a canceled or expired reservation. The capacity has already been released."
+                        }, status=400)
+
+                    if status == "Canceled":
+                        sql_update_res = """
+                            UPDATE reservations
+                            SET reservation_status = %s, canceled_by = %s
+                            WHERE reservation_id = %s;
+                        """
+                        cursor.execute(sql_update_res, [status, admin_user_id, target_id])
+                    else:
+                        sql_update_res = """
+                            UPDATE reservations
+                            SET reservation_status = %s
+                            WHERE reservation_id = %s;
+                        """
+                        cursor.execute(sql_update_res, [status, target_id])
+
+                    if status == "Canceled" and old_status not in ["Canceled", "Expired", "Failed"]:
+                        sql_restore = """
+                            UPDATE tickets
+                            SET remaining_capacity = remaining_capacity + %s
+                            WHERE ticket_id = %s;
+                        """
+                        cursor.execute(sql_restore, [quantity, ticket_id])
+                        invalidate_ticket_caches()
+
+            response_data = {
+                "reservation_id": target_id,
+                "status": status,
+                "ticket_id": ticket_id
+            }
+            
+            if status == "Canceled":
+                response_data["canceled_by"] = admin_user_id
+
+            return JsonResponse({
+                "message": "Reservation updated successfully.",
+                "reservation": response_data
+            }, status=200)
+            
+        except Exception as e:
+            return JsonResponse({"error": "Database error occurred during reservation update."}, status=500)
 
     elif target_type == "report":
         reply = body.get("reply")
@@ -109,28 +124,31 @@ def admin_ticket_management(request):
         if not reply:
             return JsonResponse({"error": "reply text is required for report updates."}, status=400)
 
-        sql_report = """
-            UPDATE reports
-            SET reply = %s,
-                report_status = %s
-            WHERE report_id = %s
-            RETURNING report_id;
-        """
-        with connection.cursor() as cursor:
-            cursor.execute(sql_report, [reply, report_status, target_id])
-            report_row = cursor.fetchone()
+        try:
+            sql_report = """
+                UPDATE reports
+                SET reply = %s,
+                    report_status = %s
+                WHERE report_id = %s
+                RETURNING report_id;
+            """
+            with connection.cursor() as cursor:
+                cursor.execute(sql_report, [reply, report_status, target_id])
+                report_row = cursor.fetchone()
 
-        if not report_row:
-            return JsonResponse({"error": "Report not found."}, status=404)
+            if not report_row:
+                return JsonResponse({"error": "Report not found."}, status=404)
 
-        return JsonResponse({
-            "message": "Report updated successfully.",
-            "report": {
-                "report_id": target_id,
-                "status": report_status,
-                "reply": reply
-            }
-        }, status=200)
+            return JsonResponse({
+                "message": "Report updated successfully.",
+                "report": {
+                    "report_id": target_id,
+                    "status": report_status,
+                    "reply": reply
+                }
+            }, status=200)
+        except Exception:
+             return JsonResponse({"error": "Database error occurred during report update."}, status=500)
 
     else:
         return JsonResponse({"error": "Invalid target_type. Must be 'reservation' or 'report'."}, status=400)

@@ -1,3 +1,4 @@
+import os
 import json
 import uuid
 import redis
@@ -6,7 +7,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db import connection, transaction, IntegrityError
 from core.utils import release_expired_reservations, jwt_required
 
-cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
+redis_host = os.getenv('REDIS_HOST', '127.0.0.1')
+cache = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)
 
 # API 8: Payment for Ticket
     # Processes ticket payment by verifying active Redis TTL locks, recording transaction details

@@ -1,3 +1,4 @@
+import os
 import json
 import redis
 import string
@@ -9,7 +10,8 @@ from django.db import IntegrityError
 from core.utils import release_expired_reservations, invalidate_ticket_caches, jwt_required
 from django.views.decorators.csrf import csrf_exempt
 
-cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
+redis_host = os.getenv('REDIS_HOST', '127.0.0.1')
+cache = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)
 
 # API 7: Reserve Ticket
     # Handles ticket reservation by checking capacity, deducting quantity within an atomic

@@ -1,3 +1,4 @@
+import os
 import re
 import json
 import redis
@@ -12,7 +13,8 @@ from core.utils import (
     jwt_required
 )
 
-cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
+redis_host = os.getenv('REDIS_HOST', '127.0.0.1')
+cache = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)
 
 # API 3: Update User Profile
     # Updates profile details for a given user using dynamic SQL fields

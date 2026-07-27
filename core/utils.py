@@ -1,3 +1,4 @@
+import os
 import re
 import jwt
 import redis
@@ -10,7 +11,8 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.core.mail import send_mail
 
-cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
+redis_host = os.getenv('REDIS_HOST', '127.0.0.1')
+cache = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)
 
 def is_valid_email(email):
     pattern = r"^[a-zA-Z0-9]+(?:[\.\_\+\-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[\.\-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$"

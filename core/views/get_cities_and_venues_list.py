@@ -1,9 +1,11 @@
+import os
 import json
 import redis
 from django.db import connection
 from django.http import JsonResponse
 
-cache = redis.Redis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
+redis_host = os.getenv('REDIS_HOST', '127.0.0.1')
+cache = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)
 
 # API 4: Get Cities and Venues List
     # Retrieves a distinct list of all available venues and their corresponding cities 

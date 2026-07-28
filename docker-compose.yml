@@ -22,8 +22,18 @@ services:
     ports:
       - "6379:6379"
 
+  elasticsearch:
+    image: elasticsearch:8.10.2
+    container_name: tket_elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+
   web:
-    build: .
+    build: ./backend
     container_name: tket_django
     restart: always
     ports:
@@ -31,9 +41,11 @@ services:
     depends_on:
       - db
       - redis
+      - elasticsearch
     environment:
       - DB_HOST=db
       - REDIS_HOST=redis
+      - ELASTICSEARCH_HOST=elasticsearch
 
 volumes:
   postgres_data:

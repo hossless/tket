@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.db import IntegrityError, connection
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
-from core.utils import (
+from backend.core.utils import (
     detect_contact_type,
     generate_user_token, 
     is_valid_username, 

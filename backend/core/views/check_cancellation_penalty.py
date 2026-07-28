@@ -1,6 +1,6 @@
 from django.db import connection
 from django.http import JsonResponse
-from core.utils import calculate_cancellation_penalty, jwt_required
+from backend.core.utils import calculate_cancellation_penalty, jwt_required
 
 # API 9: Check Cancellation Penalty
     # Calculates potential cancellation penalties and eligible refund amounts for a confirmed

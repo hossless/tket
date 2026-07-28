@@ -2,7 +2,7 @@ import json
 from django.http import JsonResponse
 from django.db import connection, transaction
 from django.views.decorators.csrf import csrf_exempt
-from core.utils import release_expired_reservations, invalidate_ticket_caches, jwt_required
+from backend.core.utils import release_expired_reservations, invalidate_ticket_caches, jwt_required
 
 # API 10: Admin Ticket & Report Management
     # Allows system administrators/support staff to update reservation statuses

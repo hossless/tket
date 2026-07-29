@@ -217,8 +217,8 @@ def invalidate_ticket_caches():
 
 def update_es_ticket(ticket_id, **kwargs):
     try:
-        es = Elasticsearch(getattr(settings, 'ELASTICSEARCH_URL', 'http://localhost:9200'))
-        
+
+        es = Elasticsearch(os.environ.get('ELASTICSEARCH_URL', 'http://elasticsearch:9200'))        
         es.update(
             index="tickets",
             id=ticket_id,

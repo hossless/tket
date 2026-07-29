@@ -1,3 +1,4 @@
+import os
 import datetime
 from django.conf import settings
 from django.db import connection
@@ -8,8 +9,7 @@ class Command(BaseCommand):
     help = 'Syncs tickets from PostgreSQL (raw SQL) to ElasticSearch'
 
     def handle(self, *args, **kwargs):
-        es = Elasticsearch(getattr(settings, 'ELASTICSEARCH_URL', 'http://localhost:9200'))
-        
+        es = Elasticsearch(os.environ.get('ELASTICSEARCH_URL', 'http://elasticsearch:9200'))        
         self.stdout.write("Fetching tickets from PostgreSQL...")
 
         sql = """

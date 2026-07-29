@@ -118,7 +118,7 @@ def admin_ticket_management(request):
                     else:
                         sql_update_res = """
                             UPDATE reservations
-                            SET reservation_status = %s
+                            SET reservation_status = %s, canceled_by = NULL
                             WHERE reservation_id = %s;
                         """
                         cursor.execute(sql_update_res, [status, target_id])

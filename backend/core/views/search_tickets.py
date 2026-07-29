@@ -18,8 +18,8 @@ def search_tickets(request):
 
     release_expired_reservations()
 
-    es = Elasticsearch(getattr(settings, 'ELASTICSEARCH_URL', 'http://localhost:9200'))
-
+    es = Elasticsearch(os.environ.get('ELASTICSEARCH_URL', 'http://elasticsearch:9200'))
+    
     allowed_keys = {
         'sport_type', 'team', 'venue_city', 'venue_name', 
         'category', 'min_price', 'max_price', 'start_date', 'end_date', 'sort_by',

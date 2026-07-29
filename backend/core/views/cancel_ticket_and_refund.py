@@ -5,7 +5,8 @@ from django.views.decorators.csrf import csrf_exempt
 from core.utils import (
     calculate_cancellation_penalty,
     invalidate_ticket_caches,
-    jwt_required
+    jwt_required,
+    update_es_ticket
 )
 
 # API 12: Cancel Reservation
@@ -68,11 +69,15 @@ def cancel_ticket_and_refund(request):
                 sql_restore = """
                     UPDATE tickets
                     SET remaining_capacity = remaining_capacity + %s
-                    WHERE ticket_id = %s;
+                    WHERE ticket_id = %s
+                    RETURNING remaining_capacity;
                 """
                 cursor.execute(sql_restore, [quantity, ticket_id])
+                new_capacity = cursor.fetchone()[0]
                 
         invalidate_ticket_caches()
+        
+        update_es_ticket(ticket_id, remaining_capacity=new_capacity)
 
         response_data = {
             "reservation_id": reservation_id,

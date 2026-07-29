@@ -7,8 +7,13 @@ from django.db import connection
 from django.db import transaction
 from django.http import JsonResponse
 from django.db import IntegrityError
-from core.utils import release_expired_reservations, invalidate_ticket_caches, jwt_required
 from django.views.decorators.csrf import csrf_exempt
+from core.utils import (
+    release_expired_reservations,
+    invalidate_ticket_caches,
+    jwt_required,
+    update_es_ticket
+)
 
 redis_host = os.getenv('REDIS_HOST', '127.0.0.1')
 cache = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)
@@ -73,12 +78,15 @@ def reserve_ticket(request):
                 if quantity > remaining_capacity:
                     return JsonResponse({"error": "Not enough tickets available."}, status=400)
 
+                # 🔥 Add RETURNING here to grab the exact new capacity
                 sql_update = """
                     UPDATE tickets 
                     SET remaining_capacity = remaining_capacity - %s 
-                    WHERE ticket_id = %s;
+                    WHERE ticket_id = %s
+                    RETURNING remaining_capacity;
                 """
                 cursor.execute(sql_update, [quantity, ticket_id])
+                new_capacity = cursor.fetchone()[0]
 
                 sql_insert = """
                     INSERT INTO reservations (user_id, ticket_id, quantity, seat_info, reservation_status)
@@ -91,6 +99,8 @@ def reserve_ticket(request):
 
         cache.set(f"reservation_lock:{reservation_id}", "LOCKED", ex=600)
         invalidate_ticket_caches()
+        
+        update_es_ticket(ticket_id, remaining_capacity=new_capacity)
         
         return JsonResponse({
             "message": "Ticket reserved successfully.",

@@ -2,7 +2,12 @@ import json
 from django.http import JsonResponse
 from django.db import connection, transaction
 from django.views.decorators.csrf import csrf_exempt
-from core.utils import release_expired_reservations, invalidate_ticket_caches, jwt_required
+from core.utils import (
+    jwt_required,
+    update_es_ticket,
+    invalidate_ticket_caches,
+    release_expired_reservations
+)
 
 # API 10: Admin Ticket & Report Management
     # Allows system administrators/support staff to update reservation statuses
@@ -64,11 +69,44 @@ def admin_ticket_management(request):
                         return JsonResponse({"error": "Reservation not found."}, status=404)
 
                     old_status, quantity, ticket_id = res_row
+                    
+                    alive_statuses = ["Pending", "Confirmed"]
+                    dead_statuses = ["Canceled", "Expired", "Failed"]
+                    new_capacity = None
 
-                    if old_status in ["Canceled", "Expired", "Failed"] and status not in ["Canceled", "Expired", "Failed"]:
-                        return JsonResponse({
-                            "error": "Cannot reactivate a canceled or expired reservation. The capacity has already been released."
-                        }, status=400)
+                    if old_status in dead_statuses and status in alive_statuses:
+                        sql_check_cap = "SELECT remaining_capacity FROM tickets WHERE ticket_id = %s FOR UPDATE;"
+                        cursor.execute(sql_check_cap, [ticket_id])
+                        ticket_row = cursor.fetchone()
+                        
+                        if not ticket_row:
+                            return JsonResponse({"error": "Associated ticket not found."}, status=404)
+                            
+                        current_cap = ticket_row[0]
+                        
+                        if current_cap < quantity:
+                            return JsonResponse({
+                                "error": f"Cannot revive reservation. Only {current_cap} tickets left, but reservation requires {quantity}."
+                            }, status=400)
+                            
+                        sql_deduct = """
+                            UPDATE tickets
+                            SET remaining_capacity = remaining_capacity - %s
+                            WHERE ticket_id = %s
+                            RETURNING remaining_capacity;
+                        """
+                        cursor.execute(sql_deduct, [quantity, ticket_id])
+                        new_capacity = cursor.fetchone()[0]
+
+                    elif old_status in alive_statuses and status in dead_statuses:
+                        sql_restore = """
+                            UPDATE tickets
+                            SET remaining_capacity = remaining_capacity + %s
+                            WHERE ticket_id = %s
+                            RETURNING remaining_capacity;
+                        """
+                        cursor.execute(sql_restore, [quantity, ticket_id])
+                        new_capacity = cursor.fetchone()[0]
 
                     if status == "Canceled":
                         sql_update_res = """
@@ -85,14 +123,9 @@ def admin_ticket_management(request):
                         """
                         cursor.execute(sql_update_res, [status, target_id])
 
-                    if status == "Canceled" and old_status not in ["Canceled", "Expired", "Failed"]:
-                        sql_restore = """
-                            UPDATE tickets
-                            SET remaining_capacity = remaining_capacity + %s
-                            WHERE ticket_id = %s;
-                        """
-                        cursor.execute(sql_restore, [quantity, ticket_id])
-                        invalidate_ticket_caches()
+            if new_capacity is not None:
+                invalidate_ticket_caches()
+                update_es_ticket(ticket_id, remaining_capacity=new_capacity)
 
             response_data = {
                 "reservation_id": target_id,
@@ -109,6 +142,7 @@ def admin_ticket_management(request):
             }, status=200)
             
         except Exception as e:
+            print(f"Admin API Error: {e}")
             return JsonResponse({"error": "Database error occurred during reservation update."}, status=500)
 
     elif target_type == "report":
@@ -147,7 +181,8 @@ def admin_ticket_management(request):
                     "reply": reply
                 }
             }, status=200)
-        except Exception:
+        except Exception as e:
+             print(f"Admin API Error: {e}")
              return JsonResponse({"error": "Database error occurred during report update."}, status=500)
 
     else:

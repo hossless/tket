@@ -1,6 +1,6 @@
 from django.db import connection
 from django.http import JsonResponse
-from backend.core.utils import jwt_required, release_expired_reservations
+from core.utils import jwt_required, release_expired_reservations
 
 # API 11: Get User Bookings
     # Retrieves all reservations (including status, quantity, and

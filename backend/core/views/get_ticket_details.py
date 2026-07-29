@@ -3,7 +3,7 @@ import json
 import redis
 from django.db import connection
 from django.http import JsonResponse
-from backend.core.utils import release_expired_reservations
+from core.utils import release_expired_reservations
 
 redis_host = os.getenv('REDIS_HOST', '127.0.0.1')
 cache = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)

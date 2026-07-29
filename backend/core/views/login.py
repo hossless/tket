@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.db import connection
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import check_password
-from backend.core.utils import detect_contact_type, generate_user_token
+from core.utils import detect_contact_type, generate_user_token
 
 # API 1: User Login
     # Authenticates a user using their username, email, or phone number along with their password.

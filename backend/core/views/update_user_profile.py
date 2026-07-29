@@ -6,7 +6,7 @@ from django.db import connection
 from django.http import JsonResponse
 from django.db import IntegrityError
 from django.views.decorators.csrf import csrf_exempt
-from backend.core.utils import (
+from core.utils import (
     is_valid_email,
     is_valid_phone,
     is_valid_username,

@@ -132,3 +132,6 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'tket.otp@gmail.com' 
 EMAIL_HOST_PASSWORD = 'ngmspmyfcysopnjc'
+
+ELASTICSEARCH_HOST = os.getenv('ELASTICSEARCH_HOST', 'localhost')
+ELASTICSEARCH_URL = f"http://{ELASTICSEARCH_HOST}:9200"

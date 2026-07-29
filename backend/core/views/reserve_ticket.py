@@ -7,7 +7,7 @@ from django.db import connection
 from django.db import transaction
 from django.http import JsonResponse
 from django.db import IntegrityError
-from backend.core.utils import release_expired_reservations, invalidate_ticket_caches, jwt_required
+from core.utils import release_expired_reservations, invalidate_ticket_caches, jwt_required
 from django.views.decorators.csrf import csrf_exempt
 
 redis_host = os.getenv('REDIS_HOST', '127.0.0.1')

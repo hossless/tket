@@ -1,5 +1,5 @@
 import json
-from backend.core.utils import jwt_required
+from core.utils import jwt_required
 from django.http import JsonResponse
 from django.db import connection, IntegrityError
 from django.views.decorators.csrf import csrf_exempt

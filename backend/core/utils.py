@@ -10,6 +10,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.http import JsonResponse
 from django.core.mail import send_mail
+from elasticsearch import Elasticsearch
 
 redis_host = os.getenv('REDIS_HOST', '127.0.0.1')
 cache = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)
@@ -150,30 +151,7 @@ def send_otp(contact_info, contact_type, otp):
             
     elif contact_type == 'phone_number':
         print(f"\n[SMS] To: {contact_info} | Message: Your tket login code is {otp}\n")
-        
-def release_expired_reservations():
-    with connection.cursor() as cursor:
-        restore_sql = """
-            UPDATE tickets t
-            SET remaining_capacity = t.remaining_capacity + r.quantity
-            FROM reservations r
-            WHERE r.ticket_id = t.ticket_id
-              AND r.reservation_status = 'Pending'
-              AND r.reserved_at < NOW() - INTERVAL '10 minutes';
-        """
-        cursor.execute(restore_sql)
-        
-        if cursor.rowcount > 0:
-            invalidate_ticket_caches()
-            
-        cancel_sql = """
-            UPDATE reservations
-            SET reservation_status = 'Expired'
-            WHERE reservation_status = 'Pending'
-              AND reserved_at < NOW() - INTERVAL '10 minutes';
-        """
-        cursor.execute(cancel_sql)  
-              
+
 def calculate_cancellation_penalty(ticket_datetime, amount):
     now = timezone.now()
     
@@ -201,7 +179,50 @@ def calculate_cancellation_penalty(ticket_datetime, amount):
     
     return penalty_percent, round(penalty_amount, 2), round(refund_amount, 2)    
 
+def release_expired_reservations():
+    with connection.cursor() as cursor:
+        restore_sql = """
+            UPDATE tickets t
+            SET remaining_capacity = t.remaining_capacity + r.quantity
+            FROM reservations r
+            WHERE r.ticket_id = t.ticket_id
+              AND r.reservation_status = 'Pending'
+              AND r.reserved_at < NOW() - INTERVAL '10 minutes'
+            RETURNING t.ticket_id, t.remaining_capacity; 
+        """
+        cursor.execute(restore_sql)
+        updated_tickets = cursor.fetchall()
+        
+        if updated_tickets:
+            for ticket_id, new_capacity in updated_tickets:
+                update_es_ticket(ticket_id, remaining_capacity=new_capacity)
+                
+            invalidate_ticket_caches()
+            
+        cancel_sql = """
+            UPDATE reservations
+            SET reservation_status = 'Expired'
+            WHERE reservation_status = 'Pending'
+              AND reserved_at < NOW() - INTERVAL '10 minutes';
+        """
+        cursor.execute(cancel_sql) 
+
 def invalidate_ticket_caches():
-    keys = cache.keys("tickets_search:*")
-    if keys:
-        cache.delete(*keys)
+    keys_es = cache.keys("tickets_search_es:*")
+    keys_sql = cache.keys("tickets_search:*") 
+    
+    all_keys = keys_es + keys_sql
+    if all_keys:
+        cache.delete(*all_keys)
+
+def update_es_ticket(ticket_id, **kwargs):
+    try:
+        es = Elasticsearch(getattr(settings, 'ELASTICSEARCH_URL', 'http://localhost:9200'))
+        
+        es.update(
+            index="tickets",
+            id=ticket_id,
+            doc=kwargs
+        )
+    except Exception as e:
+        print(f"Failed to update ElasticSearch for ticket {ticket_id}: {e}")

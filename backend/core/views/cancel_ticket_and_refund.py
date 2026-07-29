@@ -2,7 +2,7 @@ import json
 from django.http import JsonResponse
 from django.db import connection, transaction
 from django.views.decorators.csrf import csrf_exempt
-from backend.core.utils import (
+from core.utils import (
     calculate_cancellation_penalty,
     invalidate_ticket_caches,
     jwt_required

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 
@@ -6,6 +6,9 @@ export default function Navbar() {
   const [isDark, setIsDark] = useState(true);
   const { isAuthenticated, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
 
   const toggleTheme = () => {
     if (isDark) {
@@ -18,8 +21,8 @@ export default function Navbar() {
   };
 
   const handleLogout = () => {
-    logout();
-    navigate('/');
+    logout(); 
+    navigate('/'); 
   };
 
   return (
@@ -31,10 +34,11 @@ export default function Navbar() {
             tket.
           </Link>
 
-          <div className="hidden md:flex relative">
+          
+          <div className={`relative ${isHomePage ? 'hidden' : 'hidden md:flex'}`}>
             <input 
               type="text" 
-              placeholder="Search teams, venues..." 
+              placeholder="Search events..." 
               className="w-64 pl-10 pr-4 py-2 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] placeholder-[#9CA3AF] dark:placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] dark:focus:ring-[#B794F4] transition-all text-sm"
             />
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 absolute left-3 top-2.5 text-[#9CA3AF] dark:text-[#6B7280]">
@@ -51,7 +55,6 @@ export default function Navbar() {
           <button 
             onClick={toggleTheme}
             className="p-2 rounded-full text-[#6B7280] dark:text-[#A2A2CC] hover:bg-[#F3F4F6] dark:hover:bg-[#2D2B3D] transition-colors"
-            aria-label="Toggle Theme"
           >
             {isDark ? (
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 pointer-events-none">

@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Search from './pages/Search';
+import TicketDetail from './pages/TicketDetail';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/search" element={<Search />} />
+            <Route path="/ticket/:id" element={<TicketDetail />} />
             
             <Route 
               path="/dashboard" 

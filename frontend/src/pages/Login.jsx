@@ -1,5 +1,5 @@
 import { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 export default function Login() {
@@ -9,7 +9,10 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useContext(AuthContext);
+
+  const redirectPath = location.state?.from || '/dashboard';
 
   const handleLogin = async (e) => {
     e.preventDefault(); 
@@ -34,9 +37,12 @@ export default function Login() {
       const data = await response.json();
 
       if (response.ok) {
-        login(data.user.token); 
+        const token = data.token || (data.user && data.user.token);
+        login(token); 
+        
         setMessage("Login successful! Redirecting...");
-        setTimeout(() => { navigate('/dashboard'); }, 1000);
+        
+        setTimeout(() => { navigate(redirectPath); }, 1000);
       } else {
         setMessage(data.error || "Login failed.");
       }
@@ -78,7 +84,7 @@ export default function Login() {
             <input
               type="text"
               placeholder="user@example.com"
-              className="w-full p-3 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] placeholder-[#9CA3AF] dark:placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] dark:focus:ring-[#B794F4] transition-all"
+              className="w-full p-3 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] placeholder-[#9CA3AF] dark:placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] dark:focus:ring-[#B794F4] transition-all shadow-sm"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
             />
@@ -92,7 +98,7 @@ export default function Login() {
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
-                className="w-full p-3 pr-10 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] placeholder-[#9CA3AF] dark:placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] dark:focus:ring-[#B794F4] transition-all"
+                className="w-full p-3 pr-10 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] placeholder-[#9CA3AF] dark:placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] dark:focus:ring-[#B794F4] transition-all shadow-sm"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -119,7 +125,7 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full mt-2 p-3 rounded-lg font-bold text-white dark:text-[#1A1924] bg-[#8B5CF6] dark:bg-[#B794F4] hover:bg-[#7C3AED] dark:hover:bg-[#9F7AEA] transition-colors duration-200 shadow-md"
+            className="w-full mt-2 p-3 rounded-xl font-extrabold text-white bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D28D9] hover:to-[#7C3AED] transition-all transform hover:scale-[1.02] shadow-[0_0_15px_rgba(139,92,246,0.3)]"
           >
             Login
           </button>

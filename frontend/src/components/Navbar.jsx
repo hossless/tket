@@ -4,11 +4,12 @@ import { AuthContext } from '../context/AuthContext';
 
 export default function Navbar() {
   const [isDark, setIsDark] = useState(true);
+  const [navSearch, setNavSearch] = useState('');
   const { isAuthenticated, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   
   const location = useLocation();
-  const isHomePage = location.pathname === '/';
+  const hideSearchBar = location.pathname === '/' || location.pathname === '/search';
 
   const toggleTheme = () => {
     if (isDark) {
@@ -25,6 +26,13 @@ export default function Navbar() {
     navigate('/'); 
   };
 
+  const handleNavSearch = (e) => {
+    if (e.key === 'Enter') {
+      navigate(navSearch.trim() ? `/search?q=${navSearch}` : '/search');
+      setNavSearch('');
+    }
+  };
+
   return (
     <nav className="bg-[#FFFFFF] dark:bg-[#232130] border-b border-[#E5E7EB] dark:border-[#2D2B3D] p-4 transition-colors duration-300">
       <div className="max-w-6xl mx-auto flex justify-between items-center">
@@ -34,11 +42,13 @@ export default function Navbar() {
             tket.
           </Link>
 
-          
-          <div className={`relative ${isHomePage ? 'hidden' : 'hidden md:flex'}`}>
+          <div className={`relative ${hideSearchBar ? 'hidden' : 'hidden md:flex'}`}>
             <input 
               type="text" 
               placeholder="Search events..." 
+              value={navSearch}
+              onChange={(e) => setNavSearch(e.target.value)}
+              onKeyDown={handleNavSearch}
               className="w-64 pl-10 pr-4 py-2 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] placeholder-[#9CA3AF] dark:placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] dark:focus:ring-[#B794F4] transition-all text-sm"
             />
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 absolute left-3 top-2.5 text-[#9CA3AF] dark:text-[#6B7280]">

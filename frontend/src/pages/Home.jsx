@@ -13,7 +13,7 @@ export default function Home() {
   useEffect(() => {
     const fetchTickets = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/tickets/search/'); 
+        const response = await fetch('http://localhost:8000/api/tickets/search/?exclude_sold_out=true&show_past=false');
         if (!response.ok) throw new Error("Failed to fetch");
         
         const rawJson = await response.json();
@@ -32,13 +32,11 @@ export default function Home() {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${searchQuery}`);
-    }
+    navigate(searchQuery.trim() ? `/search?q=${searchQuery}` : '/search');
   };
 
   const handleSportClick = (sport) => {
-    navigate(`/search?sport=${sport.toLowerCase()}`);
+    navigate(`/search?sport_type=${sport}`);
   };
 
   return (

@@ -1,7 +1,16 @@
 import { Link } from 'react-router-dom';
 
 export default function TicketCard({ ticket }) {
-  const { ticket_id, home_team, away_team, sport_type, venue_city, ticket_date_time, price } = ticket;
+// THE FIX: Swap available_tickets for remaining_capacity
+  const { ticket_id, home_team, away_team, sport_type, venue_city, ticket_date_time, price, category, remaining_capacity } = ticket;
+
+  const isPast = ticket_date_time ? new Date(ticket_date_time) < new Date() : false;
+  // THE FIX: Check remaining_capacity instead
+  const isSoldOut = remaining_capacity === 0;
+
+  
+  // Decide which overlay to show (Past takes priority if both are somehow true)
+  const overlayMode = isPast ? 'past' : (isSoldOut ? 'sold-out' : null);
 
   const getImage = (sportType) => {
     if (sportType?.toLowerCase() === 'football') return "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmke4bJB0bvjlIltuqMF0KUyX1JSpnCLwctVB18GQtbw&s?q=80&w=2000&auto=format&fit=crop";
@@ -16,7 +25,7 @@ export default function TicketCard({ ticket }) {
   return (
     <Link 
       to={`/ticket/${ticket_id}`} 
-      className="group bg-[#FFFFFF] dark:bg-[#232130] rounded-2xl overflow-hidden border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm hover:shadow-xl hover:border-[#8B5CF6] dark:hover:border-[#B794F4] transition-all duration-300 flex flex-col block"
+      className={`group bg-[#FFFFFF] dark:bg-[#232130] rounded-2xl overflow-hidden border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col block ${overlayMode ? 'opacity-80 grayscale-[0.6] hover:border-[#E5E7EB] dark:hover:border-[#2D2B3D]' : 'hover:border-[#8B5CF6] dark:hover:border-[#B794F4]'}`}
     >
       <div className="h-48 w-full overflow-hidden relative">
         <img 
@@ -27,6 +36,29 @@ export default function TicketCard({ ticket }) {
         <div className="absolute top-3 left-3 bg-[#111827]/80 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
           {sport_type || 'Event'}
         </div>
+
+        {category && (
+          <div className="absolute top-3 right-3 bg-[#8B5CF6] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
+            {category}
+          </div>
+        )}
+
+        {/* THE FIX: Dynamic Overlays based on state */}
+        {overlayMode === 'sold-out' && (
+          <div className="absolute inset-0 bg-[#111827]/40 flex items-center justify-center backdrop-blur-[2px]">
+            <span className="bg-red-500 text-white font-extrabold px-4 py-2 rounded-lg tracking-widest uppercase transform -rotate-12 border-2 border-white/20 shadow-2xl text-sm">
+              Sold Out
+            </span>
+          </div>
+        )}
+
+        {overlayMode === 'past' && (
+          <div className="absolute inset-0 bg-[#111827]/60 flex items-center justify-center backdrop-blur-[2px]">
+            <span className="bg-[#374151] text-white font-extrabold px-4 py-2 rounded-lg tracking-widest uppercase transform -rotate-12 border-2 border-white/20 shadow-2xl text-sm">
+              Past Event
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="p-5 flex flex-col flex-grow">
@@ -52,12 +84,11 @@ export default function TicketCard({ ticket }) {
 
         <div className="mt-auto pt-4 border-t border-[#E5E7EB] dark:border-[#2D2B3D] flex justify-between items-center">
           <p className="text-xs text-[#6B7280] dark:text-[#A2A2CC] font-semibold uppercase tracking-wide">From</p>
-          
-          <p className="text-xl font-extrabold text-[#7C3AED] dark:text-[#B794F4]">
+          <p className={`text-xl font-extrabold ${overlayMode ? 'text-[#6B7280] dark:text-[#A2A2CC]' : 'text-[#7C3AED] dark:text-[#B794F4]'}`}>
             ${price || '0.00'}
           </p>
         </div>
       </div>
     </Link>
   );
-}   
+}

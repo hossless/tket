@@ -23,7 +23,7 @@ const CountdownTimer = ({ reservationId }) => {
     return () => clearInterval(timer);
   }, [reservationId]);
 
-  if (timeLeft === 0) return <span>Expired</span>;
+  if (timeLeft === 0) return <span>Hold Expired</span>;
   const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
   const seconds = (timeLeft % 60).toString().padStart(2, '0');
   return <span>Hold expires in {minutes}:{seconds}</span>;
@@ -37,14 +37,9 @@ export default function Dashboard() {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const [activeTab, setActiveTab] = useState(location.state?.targetTab || 'Pending');
-
+  
+  const [activeTab, setActiveTab] = useState(location.state?.targetTab || 'Pending');  
   const [successMsg, setSuccessMsg] = useState(location.state?.successMessage || null);
-
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [selectedForPayment, setSelectedForPayment] = useState(null);
-  const [isPaying, setIsPaying] = useState(false);
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [selectedForCancel, setSelectedForCancel] = useState(null);
@@ -54,7 +49,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (successMsg) {
-      window.history.replaceState({}, document.title);
+      window.history.replaceState({}, document.title); 
       const timer = setTimeout(() => setSuccessMsg(null), 5000);
       return () => clearTimeout(timer);
     }
@@ -70,7 +65,7 @@ export default function Dashboard() {
       const response = await fetch('http://localhost:8000/api/user/reservations/', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!response.ok) throw new Error('Failed to load reservations.');
+      if (!response.ok) throw new Error("Failed to load reservations.");
       const data = await response.json();
       setReservations(data.reservations);
     } catch (err) {
@@ -85,36 +80,6 @@ export default function Dashboard() {
     else fetchReservations();
   }, [isAuthenticated, navigate]);
 
-  const openPaymentModal = (res) => {
-    setSelectedForPayment(res);
-    setIsPaymentModalOpen(true);
-  };
-
-  const handleFinalPayment = async (e) => {
-    e.preventDefault();
-    setIsPaying(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    try {
-      const token = localStorage.getItem('tket_token');
-      const response = await fetch('http://localhost:8000/api/tickets/pay/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ reservation_id: selectedForPayment.reservation_id })
-      });
-
-      if (!response.ok) throw new Error('Payment failed at gateway.');
-
-      setIsPaymentModalOpen(false);
-      await fetchReservations();
-      setActiveTab('Confirmed');
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setIsPaying(false);
-    }
-  };
-
   const openCancelModal = async (res) => {
     setSelectedForCancel(res);
     setIsCancelModalOpen(true);
@@ -126,14 +91,16 @@ export default function Dashboard() {
       const response = await fetch(`http://localhost:8000/api/tickets/reservations/${res.reservation_id}/penalty/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-
-      if (!response.ok) throw new Error('Could not calculate penalty.');
+      
+      if (!response.ok) throw new Error("Could not calculate penalty.");
       const data = await response.json();
-      setPenaltyInfo(data);
+      
+      setPenaltyInfo(data.cancellation_penalty); 
     } catch (err) {
       setPenaltyInfo({
-        original_price: res.price * res.quantity,
-        penalty_fee: (res.price * res.quantity) * 0.20,
+        total_amount: res.price * res.quantity,
+        penalty_percent: 20,
+        penalty_amount: (res.price * res.quantity) * 0.20, 
         refund_amount: (res.price * res.quantity) * 0.80
       });
     } finally {
@@ -151,9 +118,11 @@ export default function Dashboard() {
         body: JSON.stringify({ reservation_id: selectedForCancel.reservation_id })
       });
 
-      if (!response.ok) throw new Error('Cancellation failed.');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Cancellation failed.");
 
       setIsCancelModalOpen(false);
+      setSuccessMsg(`Reservation canceled. $${data.cancellation_details.refund_amount} will be refunded.`);
       await fetchReservations();
       setActiveTab('Canceled & Expired');
     } catch (err) {
@@ -164,18 +133,17 @@ export default function Dashboard() {
   };
 
   const filteredReservations = reservations.filter(res => {
-    if (activeTab === 'Canceled & Expired') {
-      return res.status === 'Canceled' || res.status === 'Expired';
-    }
+    if (activeTab === 'Canceled & Expired') return res.status === 'Canceled' || res.status === 'Expired';
     return res.status === activeTab;
   });
-
+  
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   if (loading) return <div className="min-h-screen flex items-center justify-center font-bold text-[#8B5CF6] animate-pulse text-2xl">Loading Dashboard...</div>;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12 min-h-screen">
+      
       <div className="mb-10">
         <h1 className="text-4xl font-extrabold text-[#111827] dark:text-[#FFFFFF] tracking-tight">My Tickets</h1>
         <p className="text-[#6B7280] dark:text-[#A2A2CC] mt-2 font-medium">Manage your upcoming events, payments, and history.</p>
@@ -189,14 +157,14 @@ export default function Dashboard() {
 
       <div className="flex gap-8 border-b border-[#E5E7EB] dark:border-[#2D2B3D] mb-8 overflow-x-auto scrollbar-hide">
         {['Pending', 'Confirmed', 'Canceled & Expired'].map(tab => (
-          <button
+          <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`pb-4 px-2 whitespace-nowrap font-bold text-sm transition-all duration-300 relative ${
               activeTab === tab ? 'text-[#8B5CF6] dark:text-[#B794F4]' : 'text-[#6B7280] dark:text-[#A2A2CC] hover:text-[#111827] dark:hover:text-[#FFFFFF]'
             }`}
           >
-            {tab}
+            {tab} 
             {activeTab === tab && <span className="absolute bottom-0 left-0 w-full h-1 bg-[#8B5CF6] dark:bg-[#B794F4] rounded-t-lg"></span>}
           </button>
         ))}
@@ -217,6 +185,7 @@ export default function Dashboard() {
         <div className="space-y-6">
           {filteredReservations.map(res => (
             <div key={res.reservation_id} className="flex flex-col md:flex-row bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm overflow-hidden transition-all hover:shadow-md">
+              
               <div className="flex-1 p-6 sm:p-8">
                 <div className="flex justify-between items-start mb-4">
                   <span className="text-xs font-extrabold uppercase tracking-widest text-[#8B5CF6] dark:text-[#B794F4] bg-[#8B5CF6]/10 px-3 py-1 rounded-full">{res.sport_type}</span>
@@ -227,7 +196,7 @@ export default function Dashboard() {
                     {res.home_team} vs {res.away_team}
                   </h2>
                 </Link>
-
+                
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm font-medium text-[#6B7280] dark:text-[#A2A2CC]">
                   <div className="flex items-center gap-2">
                     <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>
@@ -249,11 +218,11 @@ export default function Dashboard() {
                   <p className="text-sm font-semibold text-[#6B7280] dark:text-[#A2A2CC] mb-1 uppercase tracking-wider">Total</p>
                   <p className="text-3xl font-extrabold text-[#111827] dark:text-[#FFFFFF]">${(res.price * res.quantity).toFixed(2)}</p>
                 </div>
-
+                
                 <div className="mt-4 flex flex-col justify-end gap-3 min-h-[76px]">
                   {activeTab === 'Pending' && (
                     <>
-                      <button
+                      <button 
                         onClick={() => navigate(`/checkout/${res.reservation_id}`)}
                         className="w-full bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white py-3 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(139,92,246,0.2)] hover:scale-[1.02]"
                       >
@@ -272,11 +241,11 @@ export default function Dashboard() {
                   )}
                   {activeTab === 'Canceled & Expired' && (
                     <div className={`w-full flex items-center justify-center h-[50px] rounded-xl font-bold border-2 border-dashed ${
-                      res.status === 'Expired'
+                      res.status === 'Expired' 
                         ? 'text-[#6B7280] bg-[#F3F4F6] border-[#D1D5DB] dark:text-[#A2A2CC] dark:bg-[#1A1924] dark:border-[#2D2B3D]'
                         : 'text-red-500 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-500/10 dark:border-red-500/30'
                     }`}>
-                      {res.status === 'Expired' ? 'Expired  ' : 'Canceled'}
+                      {res.status === 'Expired' ? 'Hold Expired' : 'Canceled'}
                     </div>
                   )}
                 </div>
@@ -307,11 +276,11 @@ export default function Dashboard() {
             <div className="space-y-3 bg-[#F9FAFB] dark:bg-[#1A1924] p-4 rounded-xl border border-[#E5E7EB] dark:border-[#2D2B3D]">
               <div className="flex justify-between text-sm">
                 <span className="text-[#6B7280] dark:text-[#A2A2CC]">Original Amount Paid</span>
-                <span className="font-bold text-[#111827] dark:text-[#FFFFFF]">${penaltyInfo.original_price?.toFixed(2)}</span>
+                <span className="font-bold text-[#111827] dark:text-[#FFFFFF]">${penaltyInfo.total_amount?.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-[#FF6E6E]">Penalty Fee</span>
-                <span className="font-bold text-[#FF6E6E]">-${penaltyInfo.penalty_fee?.toFixed(2)}</span>
+                <span className="text-[#FF6E6E]">Penalty Fee ({penaltyInfo.penalty_percent}%)</span>
+                <span className="font-bold text-[#FF6E6E]">-${penaltyInfo.penalty_amount?.toFixed(2)}</span>
               </div>
               <div className="border-t border-[#E5E7EB] dark:border-[#2D2B3D] pt-3 flex justify-between">
                 <span className="font-bold text-[#111827] dark:text-[#FFFFFF]">Total Refund</span>
@@ -319,12 +288,17 @@ export default function Dashboard() {
               </div>
             </div>
 
+            <p className="text-xs text-center font-medium text-[#6B7280] dark:text-[#A2A2CC]">
+              Refunds will be credited back to your original payment method within 3-5 business days.
+            </p>
+
             <button onClick={handleFinalCancel} disabled={isCanceling} className="w-full bg-[#FF6E6E] text-white py-3.5 rounded-xl font-bold hover:bg-red-500 transition-colors disabled:opacity-70 flex justify-center items-center gap-2">
               {isCanceling ? 'Canceling Ticket...' : 'Confirm & Cancel Ticket'}
             </button>
           </div>
         ) : null}
       </Modal>
+
     </div>
   );
 }

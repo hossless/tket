@@ -7,6 +7,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Search from './pages/Search';
 import TicketDetail from './pages/TicketDetail';
+import Checkout from './pages/Checkout';
+
 
 function App() {
   return (
@@ -21,7 +23,9 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/search" element={<Search />} />
             <Route path="/ticket/:id" element={<TicketDetail />} />
-            
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/checkout/:id" element={<Checkout />} />
+                        
             <Route 
               path="/dashboard" 
               element={

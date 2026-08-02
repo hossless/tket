@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/user/reservations/', views.get_user_bookings),
     path('api/user/reservations/cancel/', views.cancel_ticket_and_refund),
     path('api/user/reports/', views.report_ticket_issue),
+    path('api/user/reports/list/', views.get_user_reports),
     
     path('api/tickets/cities-venues/', views.get_cities_and_venues_list),
     path('api/tickets/search/', views.search_tickets),

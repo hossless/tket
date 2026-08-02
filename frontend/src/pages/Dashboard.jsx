@@ -47,6 +47,13 @@ export default function Dashboard() {
   const [isFetchingPenalty, setIsFetchingPenalty] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
 
+  const [profileForm, setProfileForm] = useState({
+    first_name: '', last_name: '', username: '', phone_number: '', email: '', city: ''
+  });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState(null);
+  const [profileSuccess, setProfileSuccess] = useState(null);
+
   useEffect(() => {
     if (successMsg) {
       window.history.replaceState({}, document.title); 
@@ -55,13 +62,16 @@ export default function Dashboard() {
     }
   }, [successMsg]);
 
+  useEffect(() => {
+    if (profileSuccess) {
+      const timer = setTimeout(() => setProfileSuccess(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [profileSuccess]);
+
   const fetchReservations = async () => {
     try {
       const token = localStorage.getItem('tket_token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
       const response = await fetch('http://localhost:8000/api/user/reservations/', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -75,9 +85,35 @@ export default function Dashboard() {
     }
   };
 
+  const fetchProfile = async () => {
+    try {
+      const token = localStorage.getItem('tket_token');
+      const response = await fetch('http://localhost:8000/api/user/profile/', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProfileForm({
+          first_name: data.user?.first_name || '',
+          last_name: data.user?.last_name || '',
+          username: data.user?.username || '',
+          phone_number: data.user?.phone_number || '',
+          email: data.user?.email || '',
+          city: data.user?.city || ''
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
-    if (!isAuthenticated) navigate('/login');
-    else fetchReservations();
+    if (!isAuthenticated) {
+      navigate('/login');
+    } else {
+      fetchProfile();
+      fetchReservations();
+    }
   }, [isAuthenticated, navigate]);
 
   const openCancelModal = async (res) => {
@@ -94,7 +130,6 @@ export default function Dashboard() {
       
       if (!response.ok) throw new Error("Could not calculate penalty.");
       const data = await response.json();
-      
       setPenaltyInfo(data.cancellation_penalty); 
     } catch (err) {
       setPenaltyInfo({
@@ -132,6 +167,69 @@ export default function Dashboard() {
     }
   };
 
+  const handleProfileChange = (e) => {
+    setProfileForm({ ...profileForm, [e.target.name]: e.target.value });
+  };
+
+  const handleProfileSubmit = async (e) => {
+    e.preventDefault();
+    setIsSavingProfile(true);
+    setProfileError(null);
+    setProfileSuccess(null);
+
+    const payload = {};
+    Object.keys(profileForm).forEach(key => {
+      const val = profileForm[key]?.toString().trim() || '';
+      if (val !== '') {
+        payload[key] = val;
+      }
+    });
+
+    if (Object.keys(payload).length === 0) {
+      setProfileError("Please fill out at least one field to update.");
+      setIsSavingProfile(false);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('tket_token');
+      const response = await fetch('http://localhost:8000/api/user/profile/', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to update profile.");
+      
+      setProfileForm({
+        first_name: data.user?.first_name || '',
+        last_name: data.user?.last_name || '',
+        username: data.user?.username || '',
+        phone_number: data.user?.phone_number || '',
+        email: data.user?.email || '',
+        city: data.user?.city || ''
+      });
+      
+      setProfileSuccess("Profile updated successfully!");
+    } catch (err) {
+      setProfileError(err.message);
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const getInitials = () => {
+    const f = profileForm.first_name?.trim();
+    const l = profileForm.last_name?.trim();
+    const u = profileForm.username?.trim();
+    
+    if (f && l) return `${f[0]}${l[0]}`.toUpperCase();
+    if (f) return f[0].toUpperCase();
+    if (u) return u[0].toUpperCase();
+    return 'U';
+  };
+
   const filteredReservations = reservations.filter(res => {
     if (activeTab === 'Canceled & Expired') return res.status === 'Canceled' || res.status === 'Expired';
     return res.status === activeTab;
@@ -139,14 +237,14 @@ export default function Dashboard() {
   
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center font-bold text-[#8B5CF6] animate-pulse text-2xl">Loading Dashboard...</div>;
+  if (loading && activeTab !== 'Profile') return <div className="min-h-screen flex items-center justify-center font-bold text-[#8B5CF6] animate-pulse text-2xl">Loading Dashboard...</div>;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12 min-h-screen">
       
       <div className="mb-10">
-        <h1 className="text-4xl font-extrabold text-[#111827] dark:text-[#FFFFFF] tracking-tight">My Tickets</h1>
-        <p className="text-[#6B7280] dark:text-[#A2A2CC] mt-2 font-medium">Manage your upcoming events, payments, and history.</p>
+        <h1 className="text-4xl font-extrabold text-[#111827] dark:text-[#FFFFFF] tracking-tight">My Account</h1>
+        <p className="text-[#6B7280] dark:text-[#A2A2CC] mt-2 font-medium">Manage your tickets, payments, and personal details.</p>
       </div>
 
       {successMsg && (
@@ -156,7 +254,7 @@ export default function Dashboard() {
       )}
 
       <div className="flex gap-8 border-b border-[#E5E7EB] dark:border-[#2D2B3D] mb-8 overflow-x-auto scrollbar-hide">
-        {['Pending', 'Confirmed', 'Canceled & Expired'].map(tab => (
+        {['Pending', 'Confirmed', 'Canceled & Expired', 'Profile'].map(tab => (
           <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -170,89 +268,146 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {error && <div className="mb-8 p-4 bg-[#FF6E6E]/10 border border-[#FF6E6E]/20 text-[#FF6E6E] font-bold rounded-xl">{error}</div>}
+      {activeTab === 'Profile' ? (
+        <div className="max-w-3xl mx-auto bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm p-8 sm:p-12 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          
+          <div className="flex flex-col items-center mb-10">
+            <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-[#7C3AED] to-[#8B5CF6] text-white flex items-center justify-center text-4xl font-extrabold shadow-lg mb-4 ring-4 ring-[#8B5CF6]/20">
+              {getInitials()}
+            </div>
+            <h2 className="text-xl font-bold text-[#111827] dark:text-[#FFFFFF]">
+              {profileForm.first_name || profileForm.last_name ? `${profileForm.first_name} ${profileForm.last_name}` : `@${profileForm.username || 'user'}`}
+            </h2>
+            <p className="text-sm text-[#6B7280] dark:text-[#A2A2CC]">{profileForm.email || 'Update your details below'}</p>
+          </div>
 
-      {filteredReservations.length === 0 ? (
-        <div className="py-20 text-center bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mx-auto text-[#9CA3AF] dark:text-[#6B7280] mb-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z" />
-          </svg>
-          <h3 className="text-xl font-bold text-[#111827] dark:text-[#FFFFFF] mb-2">No {activeTab.toLowerCase()} tickets</h3>
-          <p className="text-[#6B7280] dark:text-[#A2A2CC] mb-6">You don't have any tickets in this category right now.</p>
-          <Link to="/search" className="inline-block bg-[#8B5CF6] text-white px-6 py-2.5 rounded-lg font-bold hover:bg-[#7C3AED] transition-colors shadow-md">Browse Events</Link>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {filteredReservations.map(res => (
-            <div key={res.reservation_id} className="flex flex-col md:flex-row bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm overflow-hidden transition-all hover:shadow-md">
-              
-              <div className="flex-1 p-6 sm:p-8">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-xs font-extrabold uppercase tracking-widest text-[#8B5CF6] dark:text-[#B794F4] bg-[#8B5CF6]/10 px-3 py-1 rounded-full">{res.sport_type}</span>
-                  <span className="text-sm font-bold text-[#6B7280] dark:text-[#A2A2CC]">Order #{res.reservation_id}</span>
-                </div>
-                <Link to={`/ticket/${res.ticket_id}`} className="group">
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-[#111827] dark:text-[#FFFFFF] mb-1 group-hover:text-[#8B5CF6] dark:group-hover:text-[#B794F4] transition-colors">
-                    {res.home_team} vs {res.away_team}
-                  </h2>
-                </Link>
-                
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm font-medium text-[#6B7280] dark:text-[#A2A2CC]">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>
-                    {formatDate(res.ticket_date_time)}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>
-                    {res.venue_name}, {res.venue_city}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z" /></svg>
-                    {res.quantity}x Tickets ({res.seat_info})
-                  </div>
-                </div>
+          {profileError && <div className="mb-6 p-4 bg-[#FF6E6E]/10 border border-[#FF6E6E]/20 text-[#FF6E6E] font-bold rounded-xl text-sm">{profileError}</div>}
+          {profileSuccess && <div className="mb-6 p-4 bg-[#50FA7B]/10 border border-[#50FA7B]/20 text-[#50FA7B] font-bold rounded-xl text-sm">{profileSuccess}</div>}
+
+          <form onSubmit={handleProfileSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">First Name</label>
+                <input type="text" name="first_name" value={profileForm.first_name} onChange={handleProfileChange} placeholder="e.g. John" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none" />
               </div>
-
-              <div className="w-full md:w-[280px] shrink-0 bg-[#F9FAFB] dark:bg-[#1A1924] p-6 sm:p-8 flex flex-col justify-between border-t md:border-t-0 md:border-l border-[#E5E7EB] dark:border-[#2D2B3D]">
-                <div>
-                  <p className="text-sm font-semibold text-[#6B7280] dark:text-[#A2A2CC] mb-1 uppercase tracking-wider">Total</p>
-                  <p className="text-3xl font-extrabold text-[#111827] dark:text-[#FFFFFF]">${(res.price * res.quantity).toFixed(2)}</p>
-                </div>
-                
-                <div className="mt-4 flex flex-col justify-end gap-3 min-h-[76px]">
-                  {activeTab === 'Pending' && (
-                    <>
-                      <button 
-                        onClick={() => navigate(`/checkout/${res.reservation_id}`)}
-                        className="w-full bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white py-3 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(139,92,246,0.2)] hover:scale-[1.02]"
-                      >
-                        Pay Now
-                      </button>
-                      <p className="text-xs text-center font-bold text-[#FF6E6E] animate-pulse">
-                        <CountdownTimer reservationId={res.reservation_id} />
-                      </p>
-                    </>
-                  )}
-                  {activeTab === 'Confirmed' && (
-                    <>
-                      <button className="w-full bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-[#50FA7B]/10 dark:text-[#50FA7B] dark:border-[#50FA7B]/20 py-3 rounded-xl font-bold cursor-default">Ticket Valid</button>
-                      <button onClick={() => openCancelModal(res)} className="w-full text-xs font-bold text-[#FF6E6E] hover:underline text-center">Request Cancellation</button>
-                    </>
-                  )}
-                  {activeTab === 'Canceled & Expired' && (
-                    <div className={`w-full flex items-center justify-center h-[50px] rounded-xl font-bold border-2 border-dashed ${
-                      res.status === 'Expired' 
-                        ? 'text-[#6B7280] bg-[#F3F4F6] border-[#D1D5DB] dark:text-[#A2A2CC] dark:bg-[#1A1924] dark:border-[#2D2B3D]'
-                        : 'text-red-500 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-500/10 dark:border-red-500/30'
-                    }`}>
-                      {res.status === 'Expired' ? 'Hold Expired' : 'Canceled'}
-                    </div>
-                  )}
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Last Name</label>
+                <input type="text" name="last_name" value={profileForm.last_name} onChange={handleProfileChange} placeholder="e.g. Doe" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Username</label>
+                <input type="text" name="username" value={profileForm.username} onChange={handleProfileChange} placeholder="e.g. jdoe99" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Email Address</label>
+                <input type="email" name="email" value={profileForm.email} onChange={handleProfileChange} placeholder="john@example.com" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Phone Number</label>
+                <input type="text" name="phone_number" value={profileForm.phone_number} onChange={handleProfileChange} placeholder="+1234567890" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none font-mono" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">City</label>
+                <input type="text" name="city" value={profileForm.city} onChange={handleProfileChange} placeholder="e.g. Tehran" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none" />
               </div>
             </div>
-          ))}
+            
+            <div className="pt-4">
+              <button disabled={isSavingProfile} type="submit" className="w-full sm:w-auto px-8 py-3.5 bg-[#111827] dark:bg-[#FFFFFF] text-white dark:text-[#1A1924] rounded-xl font-bold hover:bg-[#374151] dark:hover:bg-[#E5E7EB] transition-colors disabled:opacity-70 flex justify-center items-center gap-2 mx-auto">
+                {isSavingProfile ? (
+                  <><svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...</>
+                ) : 'Save Changes'}
+              </button>
+            </div>
+          </form>
         </div>
+      ) : (
+        <>
+          {error && <div className="mb-8 p-4 bg-[#FF6E6E]/10 border border-[#FF6E6E]/20 text-[#FF6E6E] font-bold rounded-xl">{error}</div>}
+
+          {filteredReservations.length === 0 ? (
+            <div className="py-20 text-center bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm animate-in fade-in zoom-in-95 duration-300">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mx-auto text-[#9CA3AF] dark:text-[#6B7280] mb-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z" />
+              </svg>
+              <h3 className="text-xl font-bold text-[#111827] dark:text-[#FFFFFF] mb-2">No {activeTab.toLowerCase()} tickets</h3>
+              <p className="text-[#6B7280] dark:text-[#A2A2CC] mb-6">You don't have any tickets in this category right now.</p>
+              <Link to="/search" className="inline-block bg-[#8B5CF6] text-white px-6 py-2.5 rounded-lg font-bold hover:bg-[#7C3AED] transition-colors shadow-md">Browse Events</Link>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {filteredReservations.map(res => (
+                <div key={res.reservation_id} className="flex flex-col md:flex-row bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm overflow-hidden transition-all hover:shadow-md animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  
+                  <div className="flex-1 p-6 sm:p-8">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-xs font-extrabold uppercase tracking-widest text-[#8B5CF6] dark:text-[#B794F4] bg-[#8B5CF6]/10 px-3 py-1 rounded-full">{res.sport_type}</span>
+                      <span className="text-sm font-bold text-[#6B7280] dark:text-[#A2A2CC]">Order #{res.reservation_id}</span>
+                    </div>
+                    <Link to={`/ticket/${res.ticket_id}`} className="group">
+                      <h2 className="text-2xl sm:text-3xl font-extrabold text-[#111827] dark:text-[#FFFFFF] mb-1 group-hover:text-[#8B5CF6] dark:group-hover:text-[#B794F4] transition-colors">
+                        {res.home_team} vs {res.away_team}
+                      </h2>
+                    </Link>
+                    
+                    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm font-medium text-[#6B7280] dark:text-[#A2A2CC]">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>
+                        {formatDate(res.ticket_date_time)}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>
+                        {res.venue_name}, {res.venue_city}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z" /></svg>
+                        {res.quantity}x Tickets ({res.seat_info})
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="w-full md:w-[280px] shrink-0 bg-[#F9FAFB] dark:bg-[#1A1924] p-6 sm:p-8 flex flex-col justify-between border-t md:border-t-0 md:border-l border-[#E5E7EB] dark:border-[#2D2B3D]">
+                    <div>
+                      <p className="text-sm font-semibold text-[#6B7280] dark:text-[#A2A2CC] mb-1 uppercase tracking-wider">Total</p>
+                      <p className="text-3xl font-extrabold text-[#111827] dark:text-[#FFFFFF]">${(res.price * res.quantity).toFixed(2)}</p>
+                    </div>
+                    
+                    <div className="mt-4 flex flex-col justify-end gap-3 min-h-[76px]">
+                      {activeTab === 'Pending' && (
+                        <>
+                          <button 
+                            onClick={() => navigate(`/checkout/${res.reservation_id}`)}
+                            className="w-full bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white py-3 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(139,92,246,0.2)] hover:scale-[1.02]"
+                          >
+                            Pay Now
+                          </button>
+                          <p className="text-xs text-center font-bold text-[#FF6E6E] animate-pulse">
+                            <CountdownTimer reservationId={res.reservation_id} />
+                          </p>
+                        </>
+                      )}
+                      {activeTab === 'Confirmed' && (
+                        <>
+                          <button className="w-full bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-[#50FA7B]/10 dark:text-[#50FA7B] dark:border-[#50FA7B]/20 py-3 rounded-xl font-bold cursor-default">Ticket Valid</button>
+                          <button onClick={() => openCancelModal(res)} className="w-full text-xs font-bold text-[#FF6E6E] hover:underline text-center">Request Cancellation</button>
+                        </>
+                      )}
+                      {activeTab === 'Canceled & Expired' && (
+                        <div className={`w-full flex items-center justify-center h-[50px] rounded-xl font-bold border-2 border-dashed ${
+                          res.status === 'Expired' 
+                            ? 'text-[#6B7280] bg-[#F3F4F6] border-[#D1D5DB] dark:text-[#A2A2CC] dark:bg-[#1A1924] dark:border-[#2D2B3D]'
+                            : 'text-red-500 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-500/10 dark:border-red-500/30'
+                        }`}>
+                          {res.status === 'Expired' ? 'Hold Expired' : 'Canceled'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <Modal isOpen={isCancelModalOpen} onClose={() => !isCanceling && setIsCancelModalOpen(false)} title="Cancel Ticket">

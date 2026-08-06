@@ -9,6 +9,7 @@ import Search from './pages/Search';
 import TicketDetail from './pages/TicketDetail';
 import Checkout from './pages/Checkout';
 import AdminPanel from './pages/AdminPanel';
+import Signup from './pages/Signup';
 
 function App() {
   return (
@@ -21,17 +22,31 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />           
             <Route path="/search" element={<Search />} />
             <Route path="/ticket/:id" element={<TicketDetail />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/checkout/:id" element={<Checkout />} />
-            <Route path="/admin" element={<AdminPanel />} />           
-                        
+            
             <Route 
               path="/dashboard" 
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/checkout/:id" 
+              element={
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute>
+                  <AdminPanel />
                 </ProtectedRoute>
               } 
             />

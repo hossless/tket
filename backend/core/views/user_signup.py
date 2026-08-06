@@ -114,11 +114,18 @@ def verify_signup_otp(request):
         return JsonResponse({"error": "Too many failed attempts. Please request a new OTP."}, status=403)
     
     if str(entered_otp) != str(sent_otp):
-        cache_data['attempts'] = attempts + 1
+        new_attempts = attempts + 1
+        
+        if new_attempts >= 3:
+            cache.delete(f"pending_user:{contact_info}")
+            return JsonResponse({"error": "Too many failed attempts. Please request a new OTP."}, status=403)
+            
+        cache_data['attempts'] = new_attempts
         ttl = cache.ttl(f"pending_user:{contact_info}")
         if ttl > 0:
             cache.set(f"pending_user:{contact_info}", json.dumps(cache_data), ex=ttl)
-        return JsonResponse({"error": f"OTP does not match. You have {3 - cache_data['attempts']} attempts left."}, status=400)
+            
+        return JsonResponse({"error": f"OTP does not match. You have {3 - new_attempts} attempts left."}, status=400)
                 
     contact_type = detect_contact_type(contact_info)
     if not contact_type:

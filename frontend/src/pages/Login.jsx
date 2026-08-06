@@ -1,5 +1,5 @@
-import { useState, useContext } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useContext, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 export default function Login() {
@@ -10,9 +10,15 @@ export default function Login() {
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useContext(AuthContext);
+  const { login, isAuthenticated } = useContext(AuthContext);
 
   const redirectPath = location.state?.from || '/dashboard';
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault(); 
@@ -56,13 +62,14 @@ export default function Login() {
       
       <div className="w-96 p-8 rounded-2xl shadow-xl bg-[#FFFFFF] dark:bg-[#232130] border border-[#E5E7EB] dark:border-[#2D2B3D] transition-colors duration-300">
         
-        <h2 className="text-3xl font-bold mb-2 text-center text-[#111827] dark:text-[#FFFFFF]">
-          Welcome Back
-        </h2>
-        
-        <p className="text-sm text-center mb-6 text-[#6B7280] dark:text-[#A2A2CC]">
-          Login to access your tickets.
-        </p>
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-[#111827] dark:text-[#FFFFFF] mb-1">
+            Welcome Back
+          </h2>
+          <p className="text-sm text-[#6B7280] dark:text-[#A2A2CC]">
+            Login to access your tickets.
+          </p>
+        </div>
 
         <div className="min-h-[24px] mb-4">
           {message && (
@@ -76,29 +83,29 @@ export default function Login() {
           )}
         </div>
 
-        <form onSubmit={handleLogin} className="flex flex-col gap-6">
+        <form onSubmit={handleLogin} className="flex flex-col gap-5">
           <div>
-            <label className="block text-sm font-semibold mb-2 text-[#111827] dark:text-[#FFFFFF]">
+            <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">
               Email, Phone, or Username
             </label>
             <input
               type="text"
               placeholder="user@example.com"
-              className="w-full p-3 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] placeholder-[#9CA3AF] dark:placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] dark:focus:ring-[#B794F4] transition-all shadow-sm"
+              className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none transition-all"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold mb-2 text-[#111827] dark:text-[#FFFFFF]">
+            <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">
               Password
             </label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
-                className="w-full p-3 pr-10 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] placeholder-[#9CA3AF] dark:placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] dark:focus:ring-[#B794F4] transition-all shadow-sm"
+                className="w-full p-3.5 pr-10 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none transition-all tracking-widest font-mono"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -106,7 +113,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3.5 text-[#9CA3AF] dark:text-[#6B7280] hover:text-[#111827] dark:hover:text-[#FFFFFF] transition-colors"
+                className="absolute right-3.5 top-4 text-[#9CA3AF] dark:text-[#6B7280] hover:text-[#111827] dark:hover:text-[#FFFFFF] transition-colors"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? (
@@ -125,10 +132,14 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full mt-2 p-3 rounded-xl font-extrabold text-white bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D28D9] hover:to-[#7C3AED] transition-all transform hover:scale-[1.02] shadow-[0_0_15px_rgba(139,92,246,0.3)]"
+            className="w-full mt-2 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white py-3.5 rounded-xl font-bold hover:scale-[1.02] transition-transform shadow-[0_0_15px_rgba(139,92,246,0.3)] flex justify-center items-center"
           >
             Login
           </button>
+          
+          <p className="text-center text-sm font-medium text-[#6B7280] dark:text-[#A2A2CC] pt-2">
+            Don't have an account? <Link to="/signup" className="text-[#8B5CF6] hover:text-[#7C3AED] font-bold transition-colors">Sign up</Link>
+          </p>
         </form>
 
       </div>

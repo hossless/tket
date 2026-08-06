@@ -10,6 +10,7 @@ import TicketDetail from './pages/TicketDetail';
 import Checkout from './pages/Checkout';
 import AdminPanel from './pages/AdminPanel';
 import Signup from './pages/Signup';
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
@@ -50,6 +51,8 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+
+            <Route path="*" element={<NotFound />} />
           </Routes>
           
         </div>

@@ -538,7 +538,7 @@ Submits a technical or refund support ticket.
 #### Endpoint
 
 ```http
-PATCH /api/admin/manage/
+PATCH /admin/manage/
 ```
 
 #### Description

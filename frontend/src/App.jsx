@@ -8,7 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Search from './pages/Search';
 import TicketDetail from './pages/TicketDetail';
 import Checkout from './pages/Checkout';
-
+import AdminPanel from './pages/AdminPanel';
 
 function App() {
   return (
@@ -25,6 +25,7 @@ function App() {
             <Route path="/ticket/:id" element={<TicketDetail />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/checkout/:id" element={<Checkout />} />
+            <Route path="/admin" element={<AdminPanel />} />           
                         
             <Route 
               path="/dashboard" 

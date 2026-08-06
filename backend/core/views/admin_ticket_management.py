@@ -159,7 +159,7 @@ def admin_ticket_management(request):
             return JsonResponse({"error": "reply text is required for report updates."}, status=400)
 
         try:
-            sql_report = """
+            sql_report = """    
                 UPDATE reports
                 SET reply = %s,
                     report_status = %s

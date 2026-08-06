@@ -65,6 +65,7 @@ export default function Dashboard() {
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [reportError, setReportError] = useState(null);
   const [reportSuccess, setReportSuccess] = useState(null);
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
     if (successMsg) {
@@ -142,9 +143,18 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    const token = localStorage.getItem('tket_token');
+    
+    if (!isAuthenticated || !token) {
       navigate('/login');
     } else {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUserRole(payload.role || 'Spectator');
+      } catch (err) {
+        setUserRole('Spectator');
+      }
+
       fetchProfile();
       fetchReservations();
       fetchReports();
@@ -318,9 +328,21 @@ export default function Dashboard() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-12 min-h-[101vh]">
       
-      <div className="mb-10">
-        <h1 className="text-4xl font-extrabold text-[#111827] dark:text-[#FFFFFF] tracking-tight">My Account</h1>
-        <p className="text-[#6B7280] dark:text-[#A2A2CC] mt-2 font-medium">Manage your tickets, payments, and personal details.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
+        <div>
+          <h1 className="text-4xl font-extrabold text-[#111827] dark:text-[#FFFFFF] tracking-tight">My Account</h1>
+          <p className="text-[#6B7280] dark:text-[#A2A2CC] mt-2 font-medium">Manage your tickets, payments, and personal details.</p>
+        </div>
+        
+        {(userRole === 'Admin' || userRole === 'Support') && (
+          <Link 
+            to="/admin" 
+            className="px-6 py-3 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white rounded-xl font-bold hover:scale-[1.02] transition-transform shadow-[0_0_15px_rgba(139,92,246,0.3)] flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm14.024-.983a1.125 1.125 0 0 1 0 1.966l-5.603 3.113A1.125 1.125 0 0 1 9 15.113V8.887c0-.857.921-1.4 1.671-.983l5.603 3.113Z" clipRule="evenodd" /></svg>
+            Command Center
+          </Link>
+        )}
       </div>
 
       {successMsg && (

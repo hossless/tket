@@ -1,13 +1,17 @@
 #!/bin/bash
 
+set -e
+
+set -o pipefail
+
 echo "🛑 Stopping and removing containers..."
 sudo docker-compose down
 
 echo "🏗️ Rebuilding and starting containers..."
 sudo docker-compose up -d --build
 
-echo "⏳ Waiting 25 seconds for Elasticsearch to wake up..."
-sleep 25
+echo "⏳ Waiting 60 seconds for Elasticsearch to wake up..."
+sleep 60
 
 echo "🔓 Unlocking Elasticsearch disk watermark limits..."
 curl -X PUT "localhost:9200/_cluster/settings" -H 'Content-Type: application/json' -d'{

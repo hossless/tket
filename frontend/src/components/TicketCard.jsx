@@ -1,21 +1,23 @@
 import { Link } from 'react-router-dom';
 
+import footballImg from '../assets/images/football.png';
+import basketballImg from '../assets/images/basketball.png';
+import volleyballImg from '../assets/images/volleyball.png';
+
 export default function TicketCard({ ticket }) {
-// THE FIX: Swap available_tickets for remaining_capacity
   const { ticket_id, home_team, away_team, sport_type, venue_city, ticket_date_time, price, category, remaining_capacity } = ticket;
 
   const isPast = ticket_date_time ? new Date(ticket_date_time) < new Date() : false;
-  // THE FIX: Check remaining_capacity instead
   const isSoldOut = remaining_capacity === 0;
 
-  
-  // Decide which overlay to show (Past takes priority if both are somehow true)
   const overlayMode = isPast ? 'past' : (isSoldOut ? 'sold-out' : null);
 
   const getImage = (sportType) => {
-    if (sportType?.toLowerCase() === 'football') return "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmke4bJB0bvjlIltuqMF0KUyX1JSpnCLwctVB18GQtbw&s?q=80&w=2000&auto=format&fit=crop";
-    if (sportType?.toLowerCase() === 'basketball') return "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcROReBnPVbho7vUB763hbL83EmLftuqp5_pzZWG7vBMDQ&s=10?q=80&w=2000&auto=format&fit=crop";
-    return "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTSdazy7HqyqThVU75m3bsJ8PVWFYLGo7e5S8OZmlGz3Q&s=10?q=80&w=2000&auto=format&fit=crop"; 
+    const type = sportType?.toLowerCase();
+    if (type === 'football') return footballImg;
+    if (type === 'basketball') return basketballImg;
+    if (type === 'volleyball') return volleyballImg;
+    return footballImg;
   };
 
   const formattedDate = ticket_date_time 
@@ -43,7 +45,6 @@ export default function TicketCard({ ticket }) {
           </div>
         )}
 
-        {/* THE FIX: Dynamic Overlays based on state */}
         {overlayMode === 'sold-out' && (
           <div className="absolute inset-0 bg-[#111827]/40 flex items-center justify-center backdrop-blur-[2px]">
             <span className="bg-red-500 text-white font-extrabold px-4 py-2 rounded-lg tracking-widest uppercase transform -rotate-12 border-2 border-white/20 shadow-2xl text-sm">

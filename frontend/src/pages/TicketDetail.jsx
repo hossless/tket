@@ -2,6 +2,10 @@ import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
+import footballImg from '../assets/images/football.png';
+import basketballImg from '../assets/images/basketball.png';
+import volleyballImg from '../assets/images/volleyball.png';
+
 export default function TicketDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -38,9 +42,11 @@ export default function TicketDetail() {
   }, [id]);
 
   const getImage = (sportType) => {
-    if (sportType?.toLowerCase() === 'football') return "https://images.unsplash.com/photo-1518605368461-1ee7c532066d?q=80&w=3000&auto=format&fit=crop";
-    if (sportType?.toLowerCase() === 'basketball') return "https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=3000&auto=format&fit=crop";
-    return "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?q=80&w=3000&auto=format&fit=crop";
+    const type = sportType?.toLowerCase();
+    if (type === 'football') return footballImg;
+    if (type === 'basketball') return basketballImg;
+    if (type === 'volleyball') return volleyballImg;
+    return footballImg; 
   };
 
   const isPast = ticket?.ticket_date_time ? new Date(ticket.ticket_date_time) < new Date() : false;

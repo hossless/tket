@@ -34,11 +34,15 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const initialTarget = location.state?.targetTab || 'Pending';
-  const isProfileInit = initialTarget === 'Profile';
+  const getInitialSidebar = () => {
+    const target = location.state?.targetTab;
+    if (target === 'Profile') return 'Profile';
+    if (target === 'Support') return 'Reports';
+    return 'Tickets';
+  };
 
-  const [activeSidebar, setActiveSidebar] = useState(isProfileInit ? 'Profile' : 'Tickets');
-  const [activeTicketTab, setActiveTicketTab] = useState(isProfileInit ? 'Pending' : initialTarget);
+  const [activeSidebar, setActiveSidebar] = useState(getInitialSidebar);
+  const [activeTicketTab, setActiveTicketTab] = useState('Pending');
 
   const [reservations, setReservations] = useState([]);
   const [reports, setReports] = useState([]);
@@ -66,6 +70,15 @@ export default function Dashboard() {
   const [reportError, setReportError] = useState(null);
   const [reportSuccess, setReportSuccess] = useState(null);
   const [userRole, setUserRole] = useState(null);
+
+  useEffect(() => {
+    const target = location.state?.targetTab;
+    if (target) {
+      if (target === 'Profile') setActiveSidebar('Profile');
+      if (target === 'Support') setActiveSidebar('Reports');
+      if (target === 'Tickets') setActiveSidebar('Tickets');
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (successMsg) {
@@ -361,7 +374,7 @@ export default function Dashboard() {
                 : 'bg-transparent text-[#6B7280] dark:text-[#A2A2CC] hover:bg-[#F3F4F6] dark:hover:bg-[#2D2B3D]'
             }`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M1.5 7.125c0-1.036.84-1.875 1.875-1.875h6c1.036 0 1.875.84 1.875 1.875v3.75c0 1.036-.84 1.875-1.875 1.875h-6A1.875 1.875 0 0 1 1.5 10.875v-3.75Zm12 1.5c0-1.036.84-1.875 1.875-1.875h5.25c1.035 0 1.875.84 1.875 1.875v8.25c0 1.035-.84 1.875-1.875 1.875h-5.25a1.875 1.875 0 0 1-1.875-1.875v-8.25ZM3 16.125c0-1.036.84-1.875 1.875-1.875h5.25c1.036 0 1.875.84 1.875 1.875v2.25c0 1.035-.84 1.875-1.875 1.875h-5.25A1.875 1.875 0 0 1 3 18.375v-2.25Z" clipRule="evenodd" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M1.5 7.125c0-1.036.84-1.875 1.875-1.875h6c1.036 0 1.875.84 1.875 1.875v3.75c0 1.036-.84 1.875-1.875-1.875h-6A1.875 1.875 0 0 1 1.5 10.875v-3.75Zm12 1.5c0-1.036.84-1.875 1.875-1.875h5.25c1.035 0 1.875.84 1.875 1.875v8.25c0 1.035-.84 1.875-1.875 1.875h-5.25a1.875 1.875 0 0 1-1.875-1.875v-8.25ZM3 16.125c0-1.036.84-1.875 1.875-1.875h5.25c1.036 0 1.875.84 1.875 1.875v2.25c0 1.035-.84 1.875-1.875 1.875h-5.25A1.875 1.875 0 0 1 3 18.375v-2.25Z" clipRule="evenodd" /></svg>
             My Tickets
           </button>
           
@@ -728,4 +741,4 @@ export default function Dashboard() {
 
     </div>
   );
-} 
+}

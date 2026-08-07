@@ -78,7 +78,6 @@ def reserve_ticket(request):
                 if quantity > remaining_capacity:
                     return JsonResponse({"error": "Not enough tickets available."}, status=400)
 
-                # 🔥 Add RETURNING here to grab the exact new capacity
                 sql_update = """
                     UPDATE tickets 
                     SET remaining_capacity = remaining_capacity - %s 

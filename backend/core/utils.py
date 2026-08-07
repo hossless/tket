@@ -10,7 +10,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.http import JsonResponse
 from django.core.mail import send_mail
-from elasticsearch import Elasticsearch # pyright: ignore[reportMissingImports]
+from elasticsearch import Elasticsearch
 
 redis_host = os.getenv('REDIS_HOST', '127.0.0.1')
 cache = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)
@@ -226,3 +226,42 @@ def update_es_ticket(ticket_id, **kwargs):
         )
     except Exception as e:
         print(f"Failed to update ElasticSearch for ticket {ticket_id}: {e}")
+        
+def index_new_ticket_in_es(ticket_id):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT t.ticket_id, t.sport_type, t.home_team, t.away_team, 
+                       t.ticket_date_time, t.venue_city, t.price, t.remaining_capacity, t.category,
+                       m.tournament_name, m.venue_name
+                FROM tickets t
+                JOIN match_details m ON t.ticket_id = m.ticket_id
+                WHERE t.ticket_id = %s;
+            """, [ticket_id])
+            
+            row = cursor.fetchone()
+
+        if not row:
+            return False
+
+        doc = {
+            "ticket_id": row[0],
+            "sport_type": row[1],
+            "home_team": row[2],
+            "away_team": row[3],
+            "ticket_date_time": row[4].isoformat() if row[4] else None,
+            "venue_city": row[5],
+            "price": float(row[6]),
+            "remaining_capacity": row[7],
+            "category": row[8],
+            "tournament_name": row[9],
+            "venue_name": row[10]
+        }
+
+        es = Elasticsearch(os.environ.get('ELASTICSEARCH_URL', 'http://elasticsearch:9200'))        
+        es.index(index="tickets", id=ticket_id, document=doc)
+        return True
+
+    except Exception as e:
+        print(f"Failed to index ticket {ticket_id} in Elasticsearch: {e}")
+        return False

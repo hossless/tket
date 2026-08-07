@@ -41,4 +41,5 @@ urlpatterns = [
     
     path('api/admin/manage/', views.admin_ticket_management),
     path('api/admin/dashboard/', views.get_admin_dashboard_data),
+    path('api/admin/tickets/create/', views.create_ticket),
 ]

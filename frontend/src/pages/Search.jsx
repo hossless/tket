@@ -47,6 +47,10 @@ export default function Search() {
           url.searchParams.append('exclude_sold_out', 'true');
         }
 
+        if (!searchParams.has('limit')) url.searchParams.append('limit', draftLimit);
+        if (!searchParams.has('sort_by')) url.searchParams.append('sort_by', draftSort);
+        if (!searchParams.has('page')) url.searchParams.append('page', '1');
+
         const response = await fetch(url);
         if (!response.ok) throw new Error("Search request failed");
         
@@ -61,7 +65,7 @@ export default function Search() {
     };
 
     fetchSearchResults();
-  }, [searchParams]); 
+  }, [searchParams, draftLimit, draftSort]);
 
   useEffect(() => {
     if (isFirstLoad) {

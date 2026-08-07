@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import SeatSelectorModal from '../components/SeatSelectorModal';
 
 import footballImg from '../assets/images/football.png';
 import basketballImg from '../assets/images/basketball.png';
@@ -19,6 +20,8 @@ export default function TicketDetail() {
   const [quantity, setQuantity] = useState(1);
   const [reserving, setReserving] = useState(false);
   const [reserveError, setReserveError] = useState(null);
+  
+  const [isSeatModalOpen, setIsSeatModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchTicket = async () => {
@@ -51,17 +54,23 @@ export default function TicketDetail() {
 
   const isPast = ticket?.ticket_date_time ? new Date(ticket.ticket_date_time) < new Date() : false;
   const isSoldOut = ticket?.remaining_capacity === 0;
-  
   const maxAllowed = ticket ? Math.min(10, ticket.remaining_capacity) : 1;
 
-  const handleReserve = async () => {
+  const handleOpenSeatSelection = () => {
     if (!isAuthenticated) {
       navigate('/login', { state: { from: location.pathname } });
       return;
     }
+    setIsSeatModalOpen(true);
+  };
 
+  const handleFinalReserve = async (seatString) => {
+    setIsSeatModalOpen(false);
     setReserving(true);
     setReserveError(null);
+
+    // Remove the (xNumber) from the seat string before sending to DB
+    const cleanSeatString = seatString.replace(/\s*\(x\d+\)\s*$/, '');
 
     try {
       const token = localStorage.getItem('tket_token');
@@ -73,7 +82,8 @@ export default function TicketDetail() {
         },
         body: JSON.stringify({
           ticket_id: parseInt(id),
-          quantity: quantity
+          quantity: quantity,
+          seat_info: cleanSeatString
         })
       });
 
@@ -98,37 +108,21 @@ export default function TicketDetail() {
 
   return (
     <div className="pb-24">
-      
       <div className="relative h-[45vh] w-full">
-        <img 
-          src={getImage(ticket.sport_type)} 
-          alt={ticket.sport_type} 
-          className="w-full h-full object-cover object-center"
-        />
+        <img src={getImage(ticket.sport_type)} alt={ticket.sport_type} className="w-full h-full object-cover object-center" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#F9FAFB] dark:from-[#1A1924] via-transparent to-black/30"></div>
-        
         <div className="absolute top-8 left-8 flex gap-3">
-          <span className="bg-[#111827]/80 backdrop-blur-md text-white text-sm font-extrabold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg">
-            {ticket.sport_type}
-          </span>
-          <span className="bg-[#8B5CF6]/90 backdrop-blur-md text-white text-sm font-extrabold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg">
-            {ticket.category}
-          </span>
+          <span className="bg-[#111827]/80 backdrop-blur-md text-white text-sm font-extrabold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg">{ticket.sport_type}</span>
+          <span className="bg-[#8B5CF6]/90 backdrop-blur-md text-white text-sm font-extrabold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg">{ticket.category}</span>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 -mt-20 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
           <div className="lg:col-span-2 space-y-8">
-            
             <div className="bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl p-8 shadow-sm border border-[#E5E7EB] dark:border-[#2D2B3D]">
-              <h4 className="text-[#8B5CF6] dark:text-[#B794F4] font-bold tracking-widest uppercase mb-2 text-sm">
-                {ticket.tournament_name || 'Exhibition Match'}
-              </h4>
-              <h1 className="text-4xl sm:text-6xl font-extrabold text-[#111827] dark:text-[#FFFFFF] tracking-tighter leading-none mb-6">
-                {ticket.home_team} <br/> <span className="text-[#6B7280] dark:text-[#A2A2CC] text-3xl">vs</span> {ticket.away_team}
-              </h1>
+              <h4 className="text-[#8B5CF6] dark:text-[#B794F4] font-bold tracking-widest uppercase mb-2 text-sm">{ticket.tournament_name || 'Exhibition Match'}</h4>
+              <h1 className="text-4xl sm:text-6xl font-extrabold text-[#111827] dark:text-[#FFFFFF] tracking-tighter leading-none mb-6">{ticket.home_team} <br/> <span className="text-[#6B7280] dark:text-[#A2A2CC] text-3xl">vs</span> {ticket.away_team}</h1>
               
               <div className="flex flex-col sm:flex-row sm:items-center gap-6 pt-6 border-t border-[#E5E7EB] dark:border-[#2D2B3D]">
                 <div className="flex items-center gap-3">
@@ -137,9 +131,7 @@ export default function TicketDetail() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-[#6B7280] dark:text-[#A2A2CC]">Date & Time</p>
-                    <p className="font-bold text-[#111827] dark:text-[#FFFFFF]">
-                      {new Date(ticket.ticket_date_time).toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </p>
+                    <p className="font-bold text-[#111827] dark:text-[#FFFFFF]">{new Date(ticket.ticket_date_time).toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                 </div>
 
@@ -167,18 +159,14 @@ export default function TicketDetail() {
                 </div>
               </div>
             )}
-            
           </div>
 
           <div className="lg:col-span-1">
             <div className="sticky top-24 bg-white/80 dark:bg-[#232130]/80 backdrop-blur-xl rounded-3xl p-6 shadow-2xl border border-gray-200 dark:border-white/10 flex flex-col gap-6">
-              
               <div className="flex justify-between items-center border-b border-[#E5E7EB] dark:border-[#2D2B3D] pb-6">
                 <div>
                   <p className="text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-widest mb-1">Price</p>
-                  <p className="text-4xl font-extrabold text-[#111827] dark:text-[#FFFFFF] leading-none">
-                    ${ticket.price.toFixed(2)}
-                  </p>
+                  <p className="text-4xl font-extrabold text-[#111827] dark:text-[#FFFFFF] leading-none">${ticket.price.toFixed(2)}</p>
                 </div>
                 <div className="text-right flex flex-col items-end">
                   <p className="text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-widest mb-2">Status</p>
@@ -196,25 +184,14 @@ export default function TicketDetail() {
                 <div className="space-y-3">
                   <label className="text-sm font-semibold text-[#111827] dark:text-[#FFFFFF]">Select Seats</label>
                   <div className="flex items-center justify-between bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] rounded-xl p-2">
-                    <button 
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      disabled={quantity <= 1}
-                      className="w-10 h-10 rounded-lg flex items-center justify-center text-[#111827] dark:text-[#FFFFFF] hover:bg-[#E5E7EB] dark:hover:bg-[#2D2B3D] disabled:opacity-30 transition-colors"
-                    >
+                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1} className="w-10 h-10 rounded-lg flex items-center justify-center text-[#111827] dark:text-[#FFFFFF] hover:bg-[#E5E7EB] dark:hover:bg-[#2D2B3D] disabled:opacity-30 transition-colors">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" /></svg>
                     </button>
-                    
                     <span className="text-xl font-bold text-[#111827] dark:text-[#FFFFFF] w-12 text-center">{quantity}</span>
-                    
-                    <button 
-                      onClick={() => setQuantity(Math.min(maxAllowed, quantity + 1))}
-                      disabled={quantity >= maxAllowed}
-                      className="w-10 h-10 rounded-lg flex items-center justify-center text-[#111827] dark:text-[#FFFFFF] hover:bg-[#E5E7EB] dark:hover:bg-[#2D2B3D] disabled:opacity-30 transition-colors"
-                    >
+                    <button onClick={() => setQuantity(Math.min(maxAllowed, quantity + 1))} disabled={quantity >= maxAllowed} className="w-10 h-10 rounded-lg flex items-center justify-center text-[#111827] dark:text-[#FFFFFF] hover:bg-[#E5E7EB] dark:hover:bg-[#2D2B3D] disabled:opacity-30 transition-colors">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                     </button>
                   </div>
-                  {quantity === 10 && <p className="text-xs text-[#8B5CF6] text-center font-semibold">Maximum 10 tickets per order</p>}
                 </div>
               )}
 
@@ -225,38 +202,31 @@ export default function TicketDetail() {
                 </div>
               )}
 
-              {reserveError && (
-                <div className="p-3 bg-[#FF6E6E]/10 border border-[#FF6E6E]/20 text-[#FF6E6E] text-sm font-bold rounded-xl text-center">
-                  {reserveError}
-                </div>
-              )}
+              {reserveError && <div className="p-3 bg-[#FF6E6E]/10 border border-[#FF6E6E]/20 text-[#FF6E6E] text-sm font-bold rounded-xl text-center">{reserveError}</div>}
 
               {isPast || isSoldOut ? (
-                <button disabled className="w-full py-4 rounded-xl font-extrabold text-white bg-gray-400 dark:bg-gray-700 cursor-not-allowed">
-                  Tickets Unavailable
-                </button>
+                <button disabled className="w-full py-4 rounded-xl font-extrabold text-white bg-gray-400 dark:bg-gray-700 cursor-not-allowed">Tickets Unavailable</button>
               ) : (
                 <button 
-                  onClick={handleReserve}
+                  onClick={handleOpenSeatSelection}
                   disabled={reserving}
-                  className="relative w-full py-4 rounded-xl font-extrabold text-white bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D28D9] hover:to-[#7C3AED] transition-all transform hover:scale-[1.02] shadow-[0_0_20px_rgba(139,92,246,0.3)] disabled:opacity-70 disabled:hover:scale-100 flex justify-center items-center gap-2"
+                  className="relative w-full py-4 rounded-xl font-extrabold text-white bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D28D9] hover:to-[#7C3AED] transition-all transform hover:scale-[1.02] shadow-[0_0_20px_rgba(139,92,246,0.3)] flex justify-center items-center gap-2"
                 >
-                  {reserving ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                      Locking Seats...
-                    </>
-                  ) : (
-                    isAuthenticated ? 'Reserve Seats' : 'Login to Reserve'
-                  )}
+                  {reserving ? 'Processing...' : (isAuthenticated ? 'Select Seats' : 'Login to Reserve')}
                 </button>
               )}
-
             </div>
           </div>
-
         </div>
       </div>
+
+      <SeatSelectorModal 
+        isOpen={isSeatModalOpen} 
+        onClose={() => setIsSeatModalOpen(false)} 
+        sportType={ticket.sport_type}
+        quantity={quantity}
+        onConfirm={handleFinalReserve}
+      />
     </div>
   );
 }

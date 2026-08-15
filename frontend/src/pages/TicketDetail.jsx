@@ -16,6 +16,7 @@ export default function TicketDetail() {
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isMounted, setIsMounted] = useState(false);
   
   const [quantity, setQuantity] = useState(1);
   const [reserving, setReserving] = useState(false);
@@ -34,6 +35,9 @@ export default function TicketDetail() {
         
         const data = await response.json();
         setTicket(data.ticket_info);
+        
+        setTimeout(() => setIsMounted(true), 50);
+
       } catch (err) {
         setError(err.message);
       } finally {
@@ -69,7 +73,6 @@ export default function TicketDetail() {
     setReserving(true);
     setReserveError(null);
 
-    // Remove the (xNumber) from the seat string before sending to DB
     const cleanSeatString = seatString.replace(/\s*\(x\d+\)\s*$/, '');
 
     try {
@@ -107,11 +110,11 @@ export default function TicketDetail() {
   if (!ticket) return null;
 
   return (
-    <div className="pb-24">
-      <div className="relative h-[45vh] w-full">
+    <div className="pb-24 overflow-x-hidden">
+      <div className={`relative h-[45vh] w-full transition-all duration-1000 ${isMounted ? 'opacity-100' : 'opacity-0'}`}>
         <img src={getImage(ticket.sport_type)} alt={ticket.sport_type} className="w-full h-full object-cover object-center" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#F9FAFB] dark:from-[#1A1924] via-transparent to-black/30"></div>
-        <div className="absolute top-8 left-8 flex gap-3">
+        <div className={`absolute top-8 left-8 flex gap-3 transition-all duration-700 delay-300 transform ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
           <span className="bg-[#111827]/80 backdrop-blur-md text-white text-sm font-extrabold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg">{ticket.sport_type}</span>
           <span className="bg-[#8B5CF6]/90 backdrop-blur-md text-white text-sm font-extrabold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg">{ticket.category}</span>
         </div>
@@ -119,7 +122,7 @@ export default function TicketDetail() {
 
       <div className="max-w-6xl mx-auto px-4 -mt-20 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
+          <div className={`lg:col-span-2 space-y-8 transition-all duration-1000 delay-100 transform ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
             <div className="bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl p-8 shadow-sm border border-[#E5E7EB] dark:border-[#2D2B3D]">
               <h4 className="text-[#8B5CF6] dark:text-[#B794F4] font-bold tracking-widest uppercase mb-2 text-sm">{ticket.tournament_name || 'Exhibition Match'}</h4>
               <h1 className="text-4xl sm:text-6xl font-extrabold text-[#111827] dark:text-[#FFFFFF] tracking-tighter leading-none mb-6">{ticket.home_team} <br/> <span className="text-[#6B7280] dark:text-[#A2A2CC] text-3xl">vs</span> {ticket.away_team}</h1>
@@ -161,7 +164,7 @@ export default function TicketDetail() {
             )}
           </div>
 
-          <div className="lg:col-span-1">
+          <div className={`lg:col-span-1 transition-all duration-1000 delay-300 transform ${isMounted ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}>
             <div className="sticky top-24 bg-white/80 dark:bg-[#232130]/80 backdrop-blur-xl rounded-3xl p-6 shadow-2xl border border-gray-200 dark:border-white/10 flex flex-col gap-6">
               <div className="flex justify-between items-center border-b border-[#E5E7EB] dark:border-[#2D2B3D] pb-6">
                 <div>
@@ -184,11 +187,11 @@ export default function TicketDetail() {
                 <div className="space-y-3">
                   <label className="text-sm font-semibold text-[#111827] dark:text-[#FFFFFF]">Select Seats</label>
                   <div className="flex items-center justify-between bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] rounded-xl p-2">
-                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1} className="w-10 h-10 rounded-lg flex items-center justify-center text-[#111827] dark:text-[#FFFFFF] hover:bg-[#E5E7EB] dark:hover:bg-[#2D2B3D] disabled:opacity-30 transition-colors">
+                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1} className="w-10 h-10 rounded-lg flex items-center justify-center text-[#111827] dark:text-[#FFFFFF] hover:bg-[#E5E7EB] dark:hover:bg-[#2D2B3D] disabled:opacity-30 transition-colors active:scale-95">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" /></svg>
                     </button>
                     <span className="text-xl font-bold text-[#111827] dark:text-[#FFFFFF] w-12 text-center">{quantity}</span>
-                    <button onClick={() => setQuantity(Math.min(maxAllowed, quantity + 1))} disabled={quantity >= maxAllowed} className="w-10 h-10 rounded-lg flex items-center justify-center text-[#111827] dark:text-[#FFFFFF] hover:bg-[#E5E7EB] dark:hover:bg-[#2D2B3D] disabled:opacity-30 transition-colors">
+                    <button onClick={() => setQuantity(Math.min(maxAllowed, quantity + 1))} disabled={quantity >= maxAllowed} className="w-10 h-10 rounded-lg flex items-center justify-center text-[#111827] dark:text-[#FFFFFF] hover:bg-[#E5E7EB] dark:hover:bg-[#2D2B3D] disabled:opacity-30 transition-colors active:scale-95">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                     </button>
                   </div>
@@ -210,7 +213,7 @@ export default function TicketDetail() {
                 <button 
                   onClick={handleOpenSeatSelection}
                   disabled={reserving}
-                  className="relative w-full py-4 rounded-xl font-extrabold text-white bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D28D9] hover:to-[#7C3AED] transition-all transform hover:scale-[1.02] shadow-[0_0_20px_rgba(139,92,246,0.3)] flex justify-center items-center gap-2"
+                  className="relative w-full py-4 rounded-xl font-extrabold text-white bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D28D9] hover:to-[#7C3AED] transition-all transform hover:scale-[1.02] shadow-[0_0_20px_rgba(139,92,246,0.3)] flex justify-center items-center gap-2 active:scale-95"
                 >
                   {reserving ? 'Processing...' : (isAuthenticated ? 'Select Seats' : 'Login to Reserve')}
                 </button>

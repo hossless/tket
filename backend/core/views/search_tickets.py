@@ -1,7 +1,7 @@
 import os
 import json
 import redis
-from django.conf import settings
+from django.utils import timezone
 from django.http import JsonResponse
 from elasticsearch import Elasticsearch
 from core.utils import release_expired_reservations
@@ -73,7 +73,8 @@ def search_tickets(request):
         es_query["bool"]["filter"].append({"range": {"remaining_capacity": {"gt": 0}}})
 
     if not (str(valid_params.get('show_past', '')).lower() in ['true', '1']):
-        es_query["bool"]["filter"].append({"range": {"ticket_date_time": {"gte": "now"}}})
+        current_utc_time = timezone.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        es_query["bool"]["filter"].append({"range": {"ticket_date_time": {"gte": current_utc_time}}})
 
     price_range = {}
     if 'min_price' in valid_params: price_range["gte"] = float(valid_params['min_price'])

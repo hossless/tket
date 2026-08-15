@@ -1,7 +1,7 @@
 import os
 import datetime
-from django.conf import settings
 from django.db import connection
+from django.utils import timezone
 from elasticsearch import Elasticsearch
 from django.core.management.base import BaseCommand
 
@@ -34,7 +34,9 @@ class Command(BaseCommand):
             for row in rows:
                 dt = row[4]
                 if isinstance(dt, datetime.datetime):
-                    dt = dt.isoformat()
+                    if timezone.is_naive(dt):
+                        dt = timezone.make_aware(dt) 
+                    dt = dt.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
                 doc = {
                     "sport_type": row[1],

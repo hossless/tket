@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 
 export default function Navbar() {
@@ -11,12 +11,23 @@ export default function Navbar() {
   const location = useLocation();
   const hideSearchBar = location.pathname === '/' || location.pathname === '/search';
 
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('tket_theme');
+    if (savedTheme === 'light') {
+      setIsDark(false);
+    } else {
+      setIsDark(true);
+    }
+  }, []);
+
   const toggleTheme = () => {
     if (isDark) {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('tket_theme', 'light');
       setIsDark(false);
     } else {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('tket_theme', 'dark');
       setIsDark(true);
     }
   };
@@ -37,7 +48,6 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-[#F9FAFB]/80 dark:bg-[#1A1924]/80 backdrop-blur-lg py-4 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex justify-between items-center">
         
-        {/* Left Side: Logo & Search */}
         <div className="flex items-center gap-8">
           <Link to="/" className="text-[#111827] dark:text-[#FFFFFF] text-2xl font-extrabold tracking-tighter hover:opacity-80 transition-opacity">
             tket.
@@ -58,7 +68,6 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Right Side: Navigation & Auth */}
         <div className="flex items-center gap-4 sm:gap-6">
           <button 
             onClick={toggleTheme}
@@ -81,17 +90,15 @@ export default function Navbar() {
               <Link 
                 to="/dashboard" 
                 state={{ targetTab: 'Profile' }}
-                className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#7C3AED] to-[#8B5CF6] text-white flex items-center justify-center font-bold shadow-md hover:scale-105 transition-transform shrink-0 relative z-10"
+                className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#9F7AEA] to-[#B794F4] text-white flex items-center justify-center font-bold shadow-md hover:scale-105 transition-transform shrink-0 relative z-10"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                 </svg>
               </Link>
               
-              {/* Invisible Bridge */}
               <div className="absolute top-full right-0 w-full h-4"></div>
 
-              {/* Hover Dropdown */}
               <div className="absolute right-0 top-[calc(100%+0.5rem)] w-56 bg-[#FFFFFF] dark:bg-[#232130] rounded-2xl shadow-xl border border-[#E5E7EB] dark:border-[#2D2B3D] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right translate-y-2 group-hover:translate-y-0 overflow-hidden z-20">
                 <div className="py-2">
                   <Link 

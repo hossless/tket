@@ -11,8 +11,6 @@ export default function Home() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setTimeout(() => setIsMounted(true), 50);
-
     const fetchTickets = async () => {
       try {
         const response = await fetch('http://localhost:8000/api/tickets/search/?exclude_sold_out=true&show_past=false');
@@ -31,6 +29,14 @@ export default function Home() {
 
     fetchTickets();
   }, []); 
+
+  useEffect(() => {
+    if (!loading) {
+      setIsMounted(false);
+      const timer = setTimeout(() => setIsMounted(true), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -131,19 +137,7 @@ export default function Home() {
       </div>
           
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, index) => (
-            <div key={index} className="bg-[#FFFFFF] dark:bg-[#232130] rounded-2xl p-4 shadow-sm border border-[#E5E7EB] dark:border-[#2D2B3D] animate-pulse">
-              <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 rounded-xl mb-4"></div>
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-6"></div>
-              <div className="flex justify-between items-end pt-4 border-t border-gray-100 dark:border-gray-800">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <div className="py-20 text-center text-[#6B7280] dark:text-[#A2A2CC] animate-pulse font-bold text-xl">Loading upcoming matches...</div>
       ) : error ? (
         <div className="py-20 text-center text-[#FF6E6E] font-bold bg-[#FF6E6E]/10 rounded-2xl border border-[#FF6E6E]/20">{error}</div>
       ) : (

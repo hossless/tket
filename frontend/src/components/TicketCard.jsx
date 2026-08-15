@@ -27,9 +27,9 @@ export default function TicketCard({ ticket }) {
   return (
     <Link 
       to={`/ticket/${ticket_id}`} 
-      className={`group bg-[#FFFFFF] dark:bg-[#232130] rounded-2xl overflow-hidden border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col block ${overlayMode ? 'opacity-80 grayscale-[0.6] hover:border-[#E5E7EB] dark:hover:border-[#2D2B3D]' : 'hover:border-[#8B5CF6] dark:hover:border-[#B794F4]'}`}
+      className={`group bg-[#FFFFFF] dark:bg-[#232130] rounded-2xl overflow-hidden border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full ${overlayMode ? 'opacity-80 grayscale-[0.6] hover:border-[#E5E7EB] dark:hover:border-[#2D2B3D]' : 'hover:border-[#8B5CF6] dark:hover:border-[#B794F4]'}`}
     >
-      <div className="h-48 w-full overflow-hidden relative">
+      <div className="h-48 w-full shrink-0 overflow-hidden relative">
         <img 
           src={getImage(sport_type)} 
           alt={sport_type} 
@@ -69,14 +69,14 @@ export default function TicketCard({ ticket }) {
 
         <div className="text-sm text-[#6B7280] dark:text-[#A2A2CC] mb-6 space-y-2 font-medium">
           <div className="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="shrink-0 w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
             </svg>
-            <span>{venue_city || 'Location TBA'}</span>
+            <span className="truncate">{venue_city || 'Location TBA'}</span>
           </div>
           <div className="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="shrink-0 w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
             </svg>
             <span>{formattedDate}</span>

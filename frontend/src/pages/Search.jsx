@@ -12,6 +12,7 @@ export default function Search() {
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   const [draftSearch, setDraftSearch] = useState(searchParams.get('q') || '');
   const [draftSport, setDraftSport] = useState(searchParams.get('sport_type') || '');
@@ -66,6 +67,14 @@ export default function Search() {
 
     fetchSearchResults();
   }, [searchParams, draftLimit, draftSort]);
+
+  useEffect(() => {
+    if (!loading) {
+      setIsMounted(false);
+      const timer = setTimeout(() => setIsMounted(true), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
 
   useEffect(() => {
     if (isFirstLoad) {
@@ -154,7 +163,7 @@ export default function Search() {
 
     <div className="max-w-7xl mx-auto px-4 py-10 flex flex-col lg:flex-row gap-8">
       
-      <div className="w-full lg:w-80 flex-shrink-0">
+      <div className={`w-full lg:w-80 flex-shrink-0 transition-all duration-1000 transform ${isMounted ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
         <div className="bg-[#FFFFFF] dark:bg-[#232130] rounded-2xl border border-[#E5E7EB] dark:border-[#2D2B3D] p-6 shadow-sm sticky top-6">
           
           <div className="flex justify-between items-center mb-6">
@@ -177,7 +186,7 @@ export default function Search() {
                   placeholder="Teams, venues..." 
                   value={draftSearch}
                   onChange={(e) => setDraftSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] placeholder-[#9CA3AF] dark:placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] placeholder-[#9CA3AF] dark:placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-sm transition-shadow"
                 />
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 absolute left-3 top-3 text-[#9CA3AF]">
                   <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
@@ -193,7 +202,7 @@ export default function Search() {
                     key={sport}
                     type="button"
                     onClick={() => setDraftSport(draftSport === sport ? '' : sport)}
-                    className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+                    className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all active:scale-95 ${
                       draftSport === sport 
                         ? 'bg-[#8B5CF6] text-white border border-[#8B5CF6]' 
                         : 'bg-transparent text-[#6B7280] dark:text-[#A2A2CC] border border-[#E5E7EB] dark:border-[#2D2B3D] hover:border-[#8B5CF6] dark:hover:border-[#B794F4]'
@@ -211,7 +220,7 @@ export default function Search() {
                 <select 
                   value={draftCategory}
                   onChange={(e) => setDraftCategory(e.target.value)}
-                  className="w-full appearance-none pl-4 pr-10 py-2.5 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-sm cursor-pointer shadow-sm"
+                  className="w-full appearance-none pl-4 pr-10 py-2.5 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-sm cursor-pointer shadow-sm transition-shadow"
                 >
                   <option value="Any">All Categories</option>
                   <option value="VIP">VIP</option>
@@ -235,7 +244,7 @@ export default function Search() {
               <div className="pt-2 px-2">
                 <ReactSlider
                   className="w-full h-1.5 bg-[#E5E7EB] dark:bg-[#2D2B3D] rounded-full"
-                  thumbClassName="w-5 h-5 -mt-1.5 bg-[#8B5CF6] dark:bg-[#B794F4] rounded-full cursor-grab focus:outline-none focus:ring-4 focus:ring-[#8B5CF6]/30 shadow-md"
+                  thumbClassName="w-5 h-5 -mt-1.5 bg-[#8B5CF6] dark:bg-[#B794F4] rounded-full cursor-grab focus:outline-none focus:ring-4 focus:ring-[#8B5CF6]/30 shadow-md transition-shadow"
                   trackClassName="track"
                   renderTrack={(props, state) => (
                     <div {...props} className={`h-1.5 rounded-full ${state.index === 1 ? 'bg-[#8B5CF6] dark:bg-[#B794F4]' : 'bg-[#E5E7EB] dark:bg-[#2D2B3D]'}`} />
@@ -256,7 +265,7 @@ export default function Search() {
                   selected={draftStartDate ? new Date(draftStartDate) : null}
                   onChange={(date) => setDraftStartDate(date ? date.toISOString().split('T')[0] : '')}
                   placeholderText="Select start date"
-                  className="w-full px-4 py-2.5 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-sm shadow-sm placeholder-[#9CA3AF] dark:placeholder-[#6B7280]"
+                  className="w-full px-4 py-2.5 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-sm shadow-sm placeholder-[#9CA3AF] dark:placeholder-[#6B7280] transition-shadow"
                   dateFormat="MMM d, yyyy"
                 />
               </div>
@@ -267,7 +276,7 @@ export default function Search() {
                   onChange={(date) => setDraftEndDate(date ? date.toISOString().split('T')[0] : '')}
                   minDate={draftStartDate ? new Date(draftStartDate) : null}
                   placeholderText="Select end date"
-                  className="w-full px-4 py-2.5 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-sm shadow-sm placeholder-[#9CA3AF] dark:placeholder-[#6B7280]"
+                  className="w-full px-4 py-2.5 rounded-lg bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-sm shadow-sm placeholder-[#9CA3AF] dark:placeholder-[#6B7280] transition-shadow"
                   dateFormat="MMM d, yyyy"
                 />
               </div>
@@ -301,10 +310,10 @@ export default function Search() {
 
       <div className="flex-grow">
         
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+        <div className={`flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 transition-all duration-1000 delay-300 transform ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
           <div>
             <h1 className="text-3xl font-extrabold text-[#111827] dark:text-[#FFFFFF] tracking-tight">Events</h1>
-            <p className="text-[#6B7280] dark:text-[#A2A2CC] text-sm mt-1">
+            <p className="text-[#6B7280] dark:text-[#A2A2CC] text-sm mt-1 transition-opacity duration-500">
               {pagination ? `Showing ${tickets.length} of ${pagination.total_items} tickets` : 'Loading...'}
             </p>
           </div>
@@ -313,7 +322,7 @@ export default function Search() {
             <select 
             value={draftLimit}
             onChange={(e) => setDraftLimit(e.target.value)}
-            className="pl-4 pr-8 py-2 rounded-lg bg-[#FFFFFF] dark:bg-[#232130] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-sm font-semibold cursor-pointer shadow-sm"
+            className="pl-4 pr-8 py-2 rounded-lg bg-[#FFFFFF] dark:bg-[#232130] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-sm font-semibold cursor-pointer shadow-sm transition-shadow"
             >
             <option value="12">12 per page</option>
             <option value="24">24 per page</option>
@@ -323,7 +332,7 @@ export default function Search() {
             <select 
               value={draftSort}
               onChange={(e) => setDraftSort(e.target.value)}
-              className="pl-4 pr-8 py-2 rounded-lg bg-[#FFFFFF] dark:bg-[#232130] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-sm font-semibold cursor-pointer shadow-sm"
+              className="pl-4 pr-8 py-2 rounded-lg bg-[#FFFFFF] dark:bg-[#232130] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-sm font-semibold cursor-pointer shadow-sm transition-shadow"
             >
               <option value="date_asc">Soonest First</option>
               <option value="date_desc">Furthest First</option>
@@ -338,27 +347,33 @@ export default function Search() {
         ) : error ? (
            <div className="py-20 text-center text-[#FF6E6E] font-bold bg-[#FF6E6E]/10 rounded-2xl border border-[#FF6E6E]/20">{error}</div>
         ) : tickets.length === 0 ? (
-           <div className="py-20 text-center bg-[#FFFFFF] dark:bg-[#232130] rounded-2xl border border-[#E5E7EB] dark:border-[#2D2B3D]">
+           <div className="py-20 text-center bg-[#FFFFFF] dark:bg-[#232130] rounded-2xl border border-[#E5E7EB] dark:border-[#2D2B3D] transition-all duration-500 opacity-100 scale-100">
              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 mx-auto text-[#9CA3AF] mb-4">
                <path strokeLinecap="round" strokeLinejoin="round" d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm3.65 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Z" />
              </svg>
              <p className="text-[#6B7280] dark:text-[#A2A2CC] font-medium">No tickets found matching those filters.</p>
-             <button onClick={resetFilters} className="mt-4 text-[#8B5CF6] font-semibold hover:underline">Clear all filters</button>
+             <button onClick={resetFilters} className="mt-4 text-[#8B5CF6] font-semibold hover:underline transition-colors">Clear all filters</button>
            </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {tickets.map(ticket => (
-              <TicketCard key={ticket.ticket_id} ticket={ticket} />
+            {tickets.map((ticket, index) => (
+              <div 
+                key={ticket.ticket_id} 
+                className={`transition-all duration-700 transform ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+                style={{ transitionDelay: `${index * 75}ms` }}
+              >
+                <TicketCard ticket={ticket} />
+              </div>
             ))}
           </div>
         )}
 
         {pagination && pagination.total_pages > 1 && (
-          <div className="mt-12 flex justify-center items-center gap-4">
+          <div className={`mt-12 flex justify-center items-center gap-4 transition-all duration-1000 delay-500 transform ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <button 
               onClick={() => goToPage(pagination.current_page - 1)}
               disabled={pagination.current_page === 1}
-              className="px-4 py-2 rounded-lg bg-[#FFFFFF] dark:bg-[#232130] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#F9FAFB] dark:hover:bg-[#1A1924] font-semibold transition-colors shadow-sm"
+              className="px-4 py-2 rounded-lg bg-[#FFFFFF] dark:bg-[#232130] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#F9FAFB] dark:hover:bg-[#1A1924] font-semibold transition-all active:scale-95 shadow-sm"
             >
               Previous
             </button>
@@ -370,7 +385,7 @@ export default function Search() {
             <button 
               onClick={() => goToPage(pagination.current_page + 1)}
               disabled={pagination.current_page === pagination.total_pages}
-              className="px-4 py-2 rounded-lg bg-[#FFFFFF] dark:bg-[#232130] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#F9FAFB] dark:hover:bg-[#1A1924] font-semibold transition-colors shadow-sm"
+              className="px-4 py-2 rounded-lg bg-[#FFFFFF] dark:bg-[#232130] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#F9FAFB] dark:hover:bg-[#1A1924] font-semibold transition-all active:scale-95 shadow-sm"
             >
               Next
             </button>

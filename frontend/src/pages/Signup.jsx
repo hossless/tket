@@ -5,6 +5,11 @@ import { AuthContext } from '../context/AuthContext';
 export default function Signup() {
   const { login, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => setIsMounted(true), 50);
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -77,7 +82,7 @@ export default function Signup() {
 
       if (!response.ok) {
         if (response.status === 403 || response.status === 404) {
-          setStep(1); // Kick them back to step 1 automatically!
+          setStep(1); 
           setOtp('');
         }
         throw new Error(data.error || 'Invalid OTP.');
@@ -94,7 +99,7 @@ export default function Signup() {
 
   return (
     <div className="min-h-[90vh] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-xl p-8 sm:p-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className={`w-full max-w-md bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-xl p-8 sm:p-10 transition-all duration-700 transform ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-[#111827] dark:text-[#FFFFFF]">
@@ -115,7 +120,7 @@ export default function Signup() {
         )}
 
         {step === 1 ? (
-          <form onSubmit={handleRequestOtp} className="space-y-5 animate-in fade-in zoom-in-95 duration-300">
+          <form onSubmit={handleRequestOtp} className="space-y-5">
             <div>
               <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Username</label>
               <input 
@@ -170,7 +175,7 @@ export default function Signup() {
             </p>
           </form>
         ) : (
-          <form onSubmit={handleVerifyOtp} className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-500">
+          <form onSubmit={handleVerifyOtp} className="space-y-6">
             <div>
               <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-3 text-center">Enter 6-Digit Code</label>
               <input 

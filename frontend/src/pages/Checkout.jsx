@@ -12,6 +12,7 @@ export default function Checkout() {
   const [error, setError] = useState(null);
   const [isPaying, setIsPaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(600);
+  const [isMounted, setIsMounted] = useState(false);
 
   const [form, setForm] = useState({
     cardNumber: '',
@@ -81,6 +82,13 @@ export default function Checkout() {
     if (isAuthenticated) fetchReservation();
   }, [id, isAuthenticated, navigate]);
 
+  useEffect(() => {
+    if (!loading && !error && reservation) {
+      const timer = setTimeout(() => setIsMounted(true), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, error, reservation]);
+
   const handleFinalPayment = async (e) => {
     e.preventDefault();
 
@@ -125,7 +133,7 @@ export default function Checkout() {
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center font-bold text-[#8B5CF6] animate-pulse text-2xl">Securing Checkout...</div>;
-  if (error) return <div className="min-h-screen flex flex-col items-center justify-center"><p className="text-[#FF6E6E] font-bold text-xl mb-4">{error}</p><Link to="/dashboard" className="text-[#8B5CF6] hover:underline">Return to Dashboard</Link></div>;
+  if (error) return <div className="min-h-screen flex flex-col items-center justify-center"><p className="text-[#FF6E6E] font-bold text-xl mb-4">{error}</p><Link to="/dashboard" className="text-[#8B5CF6] hover:underline transition-colors">Return to Dashboard</Link></div>;
 
   const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
   const seconds = (timeLeft % 60).toString().padStart(2, '0');
@@ -133,7 +141,7 @@ export default function Checkout() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12 min-h-[calc(100vh-73px)] flex items-center justify-center">
-      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8 bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl shadow-xl border border-[#E5E7EB] dark:border-[#2D2B3D] overflow-hidden">
+      <div className={`w-full grid grid-cols-1 md:grid-cols-2 gap-8 bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl shadow-xl border border-[#E5E7EB] dark:border-[#2D2B3D] overflow-hidden transition-all duration-700 transform ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
         
         <div className="bg-[#F9FAFB] dark:bg-[#1A1924] p-8 md:p-12 flex flex-col justify-between border-b md:border-b-0 md:border-r border-[#E5E7EB] dark:border-[#2D2B3D]">
           <div>
@@ -161,7 +169,7 @@ export default function Checkout() {
             </div>
           </div>
 
-          <div className={`mt-12 p-4 rounded-xl flex items-center justify-center gap-3 font-bold ${isExpired ? 'bg-red-50 text-red-500' : 'bg-[#8B5CF6]/10 text-[#8B5CF6]'}`}>
+          <div className={`mt-12 p-4 rounded-xl flex items-center justify-center gap-3 font-bold transition-colors ${isExpired ? 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400' : 'bg-[#8B5CF6]/10 text-[#8B5CF6] dark:text-[#B794F4]'}`}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
             {isExpired ? 'Hold Expired' : `Time Remaining: ${minutes}:${seconds}`}
           </div>
@@ -175,11 +183,11 @@ export default function Checkout() {
             <div>
               <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Card Number</label>
               <input 
-                disabled={isExpired} required type="text" 
+                disabled={isExpired || isPaying} required type="text" 
                 value={form.cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ')} 
                 onChange={handleCardNumberChange}
                 maxLength="19" placeholder="0000 0000 0000 0000" 
-                className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none font-mono tracking-widest disabled:opacity-50 text-center text-lg" 
+                className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none font-mono tracking-widest disabled:opacity-50 text-center text-lg transition-shadow" 
               />
             </div>
             
@@ -187,10 +195,10 @@ export default function Checkout() {
               <div>
                 <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">CVV2</label>
                 <input 
-                  disabled={isExpired} required type="password" 
+                  disabled={isExpired || isPaying} required type="password" 
                   value={form.cvv2} onChange={handleChange('cvv2', 4)}
                   minLength="3" maxLength="4" placeholder="•••" 
-                  className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none font-mono disabled:opacity-50 text-center text-lg" 
+                  className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none font-mono disabled:opacity-50 text-center text-lg transition-shadow" 
                 />
               </div>
 
@@ -198,17 +206,17 @@ export default function Checkout() {
                 <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Expiry Date</label>
                 <div className="flex items-center gap-2">
                   <input 
-                    disabled={isExpired} required type="text" 
+                    disabled={isExpired || isPaying} required type="text" 
                     value={form.expYear} onChange={handleChange('expYear', 2)}
                     minLength="2" maxLength="2" placeholder="YY" 
-                    className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none font-mono text-center disabled:opacity-50 text-lg" 
+                    className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none font-mono text-center disabled:opacity-50 text-lg transition-shadow" 
                   />
                   <span className="text-xl text-[#9CA3AF]">/</span>
                   <input 
-                    disabled={isExpired} required type="text" 
+                    disabled={isExpired || isPaying} required type="text" 
                     value={form.expMonth} onChange={handleChange('expMonth', 2)}
                     minLength="2" maxLength="2" placeholder="MM" 
-                    className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none font-mono text-center disabled:opacity-50 text-lg" 
+                    className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none font-mono text-center disabled:opacity-50 text-lg transition-shadow" 
                   />
                 </div>
               </div>
@@ -217,27 +225,27 @@ export default function Checkout() {
             <div>
               <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Second Password / PIN</label>
               <input 
-                disabled={isExpired} required type="password" 
+                disabled={isExpired || isPaying} required type="password" 
                 value={form.secondPassword} onChange={handleChange('secondPassword', 12)}
                 minLength="4" maxLength="12" placeholder="••••" 
-                className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none font-mono tracking-widest disabled:opacity-50 text-center text-lg" 
+                className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none font-mono tracking-widest disabled:opacity-50 text-center text-lg transition-shadow" 
               />
             </div>
 
             <button 
               disabled={isPaying || isExpired} 
               type="submit" 
-              className="w-full mt-6 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white py-4 rounded-xl font-extrabold transition-all shadow-[0_0_15px_rgba(139,92,246,0.2)] hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 flex justify-center items-center gap-2"
+              className="w-full mt-6 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white py-4 rounded-xl font-extrabold shadow-[0_0_15px_rgba(139,92,246,0.2)] transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:active:scale-100 flex justify-center items-center gap-2"
             >
               {isPaying ? (
                 <><svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing Payment...</>
               ) : isExpired ? 'Hold Expired' : 'Confirm Payment'}
             </button>
-            <Link to="/dashboard" className="block text-center text-sm font-bold text-[#6B7280] hover:text-[#111827] dark:hover:text-[#FFFFFF] mt-4">Cancel & Return</Link>
+            <Link to="/dashboard" className="block text-center text-sm font-bold text-[#6B7280] hover:text-[#111827] dark:hover:text-[#FFFFFF] mt-4 transition-colors">Cancel & Return</Link>
           </form>
         </div>
 
       </div>
     </div>
   );
-}
+} 

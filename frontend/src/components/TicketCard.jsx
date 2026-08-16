@@ -33,7 +33,7 @@ export default function TicketCard({ ticket }) {
         <img 
           src={getImage(sport_type)} 
           alt={sport_type} 
-          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" 
+          className="object-cover w-full h-full group-hover:scale-115 transition-transform duration-500" 
         />
         <div className="absolute top-3 left-3 bg-[#111827]/80 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
           {sport_type || 'Event'}

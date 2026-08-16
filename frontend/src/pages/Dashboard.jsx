@@ -352,9 +352,18 @@ export default function Dashboard() {
     return 'U';
   };
 
+  const isPastEvent = (dateString) => new Date(dateString) < new Date();
+
   const filteredReservations = reservations.filter(res => {
-    if (activeTicketTab === 'Canceled & Expired') return res.status === 'Canceled' || res.status === 'Expired';
-    return res.status === activeTicketTab;
+    const isPast = isPastEvent(res.ticket_date_time);
+    
+    if (activeTicketTab === 'History & Canceled') {
+      return res.status === 'Canceled' || res.status === 'Expired' || (res.status === 'Confirmed' && isPast);
+    }
+    if (activeTicketTab === 'Confirmed') {
+      return res.status === 'Confirmed' && !isPast;
+    }
+    return res.status === activeTicketTab
   });
   
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -432,7 +441,7 @@ export default function Dashboard() {
           {activeSidebar === 'Tickets' && (
             <AnimatedWrapper key="tickets-section">
               <div className="flex gap-8 border-b border-[#E5E7EB] dark:border-[#2D2B3D] mb-8 overflow-x-auto scrollbar-hide">
-                {['Pending', 'Confirmed', 'Canceled & Expired'].map(tab => (
+                {['Pending', 'Confirmed', 'History & Canceled'].map(tab => (
                   <button 
                     key={tab}
                     onClick={() => setActiveTicketTab(tab)}
@@ -518,13 +527,17 @@ export default function Dashboard() {
                               <button onClick={() => openCancelModal(res)} className="w-full text-xs font-bold text-[#FF6E6E] hover:underline text-center active:scale-95">Request Cancellation</button>
                             </>
                           )}
-                          {activeTicketTab === 'Canceled & Expired' && (
+                          {activeTicketTab === 'History & Canceled' && (
                             <div className={`w-full flex items-center justify-center h-[50px] rounded-xl font-bold border-2 border-dashed ${
                               res.status === 'Expired' 
                                 ? 'text-[#6B7280] bg-[#F3F4F6] border-[#D1D5DB] dark:text-[#A2A2CC] dark:bg-[#1A1924] dark:border-[#2D2B3D]'
-                                : 'text-red-500 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-500/10 dark:border-red-500/30'
+                                : res.status === 'Canceled'
+                                  ? 'text-red-500 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-500/10 dark:border-red-500/30'
+                                  : 'text-[#8B5CF6] bg-[#8B5CF6]/10 border-[#8B5CF6]/30'
                             }`}>
-                              {res.status === 'Expired' ? 'Hold Expired' : 'Canceled'}
+                              {res.status === 'Expired' ? 'Expired' 
+                                : res.status === 'Canceled' ? 'Canceled' 
+                                : 'Attended'}
                             </div>
                           )}
                         </div>

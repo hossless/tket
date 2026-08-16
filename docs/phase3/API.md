@@ -28,6 +28,9 @@ This document contains the complete API reference for the **tket** backend, incl
 - [5. Admin & Support](#5-admin--support)
   - [5.1 Submit Report](#51-submit-report)
   - [5.2 Admin Ticket Management](#52-admin-ticket-management)
+  - [5.3 Get Admin Dashboard Data](#53-get-admin-dashboard-data)
+  - [5.4 Create Ticket](#54-create-ticket)
+  - [5.5 Get User Reports](#55-get-user-reports)
 
 ---
 
@@ -538,7 +541,7 @@ Submits a technical or refund support ticket.
 #### Endpoint
 
 ```http
-PATCH /api/admin/manage/
+PATCH /admin/manage/
 ```
 
 #### Description
@@ -621,3 +624,145 @@ Allows system administrators and support staff to update reservation statuses (t
 ```
 
 ---
+
+### 5.3 Get Admin Dashboard Data
+
+#### Endpoint
+
+```http
+GET /api/admin/dashboard/
+```
+
+#### Description
+
+Retrieves a comprehensive overview of all system reservations and user support reports. 
+
+This endpoint automatically triggers the `release_expired_reservations` utility to clean up dead locks before fetching data. It sorts reports intelligently, prioritizing those with a `Waiting` status.
+
+🔒 **Authentication Required:** JWT Bearer Token (Admin or Support Role)
+
+#### Success Response (200)
+
+```json
+{
+    "reservations": [
+        {
+            "reservation_id": 42,
+            "username": "sportsfan99",
+            "home_team": "Real Madrid",
+            "away_team": "Barcelona",
+            "quantity": 2,
+            "reservation_status": "Confirmed",
+            "reserved_at": "2024-05-10T14:30:00Z",
+            "ticket_id": 1
+        }
+    ],
+    "reports": [
+        {
+            "report_id": 15,
+            "username": "angryfan01",
+            "reservation_id": 42,
+            "report_type": "Refund",
+            "description": "I accidentally booked the wrong date.",
+            "reply": null,
+            "report_status": "Waiting",
+            "reported_at": "2024-05-11T09:15:00Z"
+        }
+    ]
+}
+```
+
+---
+
+### 5.4 Create Ticket
+
+#### Endpoint
+
+```http
+POST /api/admin/tickets/create/
+```
+
+#### Description
+
+Creates a new ticket entity. 
+
+This endpoint uses an atomic database transaction to guarantee that both the core ticket data and its associated `match_details` are inserted safely. Upon successful creation, it automatically invalidates the Redis ticket caches and triggers an ElasticSearch indexing sequence to make the new event instantly searchable.
+
+🔒 **Authentication Required:** JWT Bearer Token (Admin or Support Role)
+
+#### Request Body
+
+```json
+{
+    "sport_type": "Football",
+    "home_team": "Manchester City",
+    "away_team": "Arsenal",
+    "ticket_date_time": "2024-08-15T20:00:00Z",
+    "venue_city": "Manchester",
+    "venue_name": "Etihad Stadium",
+    "price": 120.50,
+    "total_capacity": 55000,
+    "category": "VIP",
+    "tournament_name": "Premier League",
+    "organizer": "FA",
+    "facilities": "VIP Lounge, Free WiFi"
+}
+```
+
+> **Note**
+> 
+> - `price` must be `>= 0` and `total_capacity` must be `> 0`.
+> - `remaining_capacity` is automatically derived from `total_capacity` upon creation.
+> - `tournament_name`, `organizer`, `venue_name`, and `facilities` are optional but recommended for ElasticSearch discoverability.
+
+#### Success Response (201)
+
+```json
+{
+    "message": "Event created successfully.",
+    "ticket_id": 105
+}
+```
+
+---
+
+### 5.5 Get User Reports
+
+#### Endpoint
+
+```http
+GET /api/user/reports/list/
+```
+
+#### Description
+
+Retrieves a chronological history of all support reports and complaints submitted by the authenticated user. 
+
+This endpoint fetches the `report_status` (e.g., Waiting or Resolved) along with any official `reply` provided by the administrative team. It relies on a highly optimized, single-table query filtering strictly by the user's JWT identity.
+
+🔒 **Authentication Required:** JWT Bearer Token
+
+#### Success Response (200)
+
+```json
+{
+    "reports": [
+        {
+            "report_id": 15,
+            "reservation_id": 42,
+            "report_type": "Refund",
+            "description": "I accidentally booked the wrong date.",
+            "report_status": "Resolved",
+            "reply": "We have successfully processed your refund manually. Please allow 3-5 days for funds to settle."
+        },
+        {
+            "report_id": 18,
+            "reservation_id": null,
+            "report_type": "Bug",
+            "description": "The search bar glitched on my mobile device.",
+            "report_status": "Waiting",
+            "reply": null
+        }
+    ]
+}
+```

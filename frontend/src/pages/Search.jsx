@@ -285,7 +285,7 @@ export default function Search() {
             <div className="space-y-4 pt-2 border-t border-[#E5E7EB] dark:border-[#2D2B3D]">
               
               <label className="flex items-center justify-between cursor-pointer group">
-                <span className="text-sm font-semibold text-[#111827] dark:text-[#FFFFFF] group-hover:text-[#8B5CF6] transition-colors">Include Sold Out</span>
+                <span className="text-sm font-semibold text-[#111827] dark:text-[#FFFFFF] group-hover:text-[#8B5CF6] transition-colors">Show Sold Out</span>
                 <div className="relative">
                   <input type="checkbox" className="sr-only" checked={draftIncludeSoldOut} onChange={(e) => setDraftIncludeSoldOut(e.target.checked)} />
                   <div className={`block w-10 h-6 rounded-full transition-colors ${draftIncludeSoldOut ? 'bg-[#8B5CF6]' : 'bg-[#E5E7EB] dark:bg-[#2D2B3D]'}`}></div>
@@ -294,7 +294,7 @@ export default function Search() {
               </label>
 
               <label className="flex items-center justify-between cursor-pointer group">
-                <span className="text-sm font-semibold text-[#111827] dark:text-[#FFFFFF] group-hover:text-[#8B5CF6] transition-colors">Include Past Events</span>
+                <span className="text-sm font-semibold text-[#111827] dark:text-[#FFFFFF] group-hover:text-[#8B5CF6] transition-colors">Show Past Events</span>
                 <div className="relative">
                   <input type="checkbox" className="sr-only" checked={draftShowPast} onChange={(e) => setDraftShowPast(e.target.checked)} />
                   <div className={`block w-10 h-6 rounded-full transition-colors ${draftShowPast ? 'bg-[#8B5CF6]' : 'bg-[#E5E7EB] dark:bg-[#2D2B3D]'}`}></div>

@@ -3,6 +3,24 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import Modal from '../components/Modal';
 
+const AnimatedWrapper = ({ children, delay = 0, className = "" }) => {
+  const [show, setShow] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div
+      className={`transition-all duration-700 transform ${show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+};
+
 const CountdownTimer = ({ reservationId }) => {
   const [timeLeft, setTimeLeft] = useState(() => {
     const savedEndTime = sessionStorage.getItem(`tket_timer_end_${reservationId}`);
@@ -48,7 +66,8 @@ export default function Dashboard() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
+  const [isPageMounted, setIsPageMounted] = useState(false);
   const [successMsg, setSuccessMsg] = useState(location.state?.successMessage || null);
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -70,6 +89,10 @@ export default function Dashboard() {
   const [reportError, setReportError] = useState(null);
   const [reportSuccess, setReportSuccess] = useState(null);
   const [userRole, setUserRole] = useState(null);
+
+  useEffect(() => {
+    setTimeout(() => setIsPageMounted(true), 50);
+  }, []);
 
   useEffect(() => {
     const target = location.state?.targetTab;
@@ -341,7 +364,7 @@ export default function Dashboard() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-12 min-h-[101vh]">
       
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
+      <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4 transition-all duration-700 transform ${isPageMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         <div>
           <h1 className="text-4xl font-extrabold text-[#111827] dark:text-[#FFFFFF] tracking-tight">My Account</h1>
           <p className="text-[#6B7280] dark:text-[#A2A2CC] mt-2 font-medium">Manage your tickets, payments, and personal details.</p>
@@ -350,7 +373,7 @@ export default function Dashboard() {
         {(userRole === 'Admin' || userRole === 'Support') && (
           <Link 
             to="/admin" 
-            className="px-6 py-3 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white rounded-xl font-bold hover:scale-[1.02] transition-transform shadow-[0_0_15px_rgba(139,92,246,0.3)] flex items-center gap-2"
+            className="px-6 py-3 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white rounded-xl font-bold hover:scale-[1.02] transition-transform shadow-[0_0_15px_rgba(139,92,246,0.3)] flex items-center gap-2 active:scale-95"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm14.024-.983a1.125 1.125 0 0 1 0 1.966l-5.603 3.113A1.125 1.125 0 0 1 9 15.113V8.887c0-.857.921-1.4 1.671-.983l5.603 3.113Z" clipRule="evenodd" /></svg>
             Command Center
@@ -359,13 +382,13 @@ export default function Dashboard() {
       </div>
 
       {successMsg && (
-        <div className="mb-8 p-4 bg-[#50FA7B]/10 border border-[#50FA7B]/20 text-[#50FA7B] font-bold rounded-xl text-center shadow-sm animate-in fade-in slide-in-from-top-4">
+        <AnimatedWrapper className="mb-8 p-4 bg-[#50FA7B]/10 border border-[#50FA7B]/20 text-[#50FA7B] font-bold rounded-xl text-center shadow-sm">
           {successMsg}
-        </div>
+        </AnimatedWrapper>
       )}
 
       <div className="flex flex-col md:flex-row gap-8 items-start">
-        <div className="w-full md:w-64 shrink-0 flex flex-col gap-2">
+        <div className={`w-full md:w-64 shrink-0 flex flex-col gap-2 transition-all duration-700 transform ${isPageMounted ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
           <button 
             onClick={() => setActiveSidebar('Tickets')}
             className={`w-full text-left px-6 py-4 rounded-xl font-bold transition-all flex items-center gap-3 ${
@@ -405,7 +428,7 @@ export default function Dashboard() {
 
         <div className="flex-1 w-full min-h-[600px]">
           {activeSidebar === 'Tickets' && (
-            <div className="animate-in fade-in duration-300">
+            <AnimatedWrapper key="tickets-section">
               <div className="flex gap-8 border-b border-[#E5E7EB] dark:border-[#2D2B3D] mb-8 overflow-x-auto scrollbar-hide">
                 {['Pending', 'Confirmed', 'Canceled & Expired'].map(tab => (
                   <button 
@@ -424,19 +447,22 @@ export default function Dashboard() {
               {error && <div className="mb-8 p-4 bg-[#FF6E6E]/10 border border-[#FF6E6E]/20 text-[#FF6E6E] font-bold rounded-xl">{error}</div>}
 
               {filteredReservations.length === 0 ? (
-                <div className="py-20 text-center bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm animate-in fade-in zoom-in-95 duration-300">
+                <AnimatedWrapper key={`empty-${activeTicketTab}`} className="py-20 text-center bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mx-auto text-[#9CA3AF] dark:text-[#6B7280] mb-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z" />
                   </svg>
                   <h3 className="text-xl font-bold text-[#111827] dark:text-[#FFFFFF] mb-2">No {activeTicketTab.toLowerCase()} tickets</h3>
                   <p className="text-[#6B7280] dark:text-[#A2A2CC] mb-6">You don't have any tickets in this category right now.</p>
-                  <Link to="/search" className="inline-block bg-[#8B5CF6] text-white px-6 py-2.5 rounded-lg font-bold hover:bg-[#7C3AED] transition-colors shadow-md">Browse Events</Link>
-                </div>
+                  <Link to="/search" className="inline-block bg-[#8B5CF6] text-white px-6 py-2.5 rounded-lg font-bold hover:bg-[#7C3AED] transition-colors shadow-md active:scale-95">Browse Events</Link>
+                </AnimatedWrapper>
               ) : (
                 <div className="space-y-6">
-                  {filteredReservations.map(res => (
-                    <div key={res.reservation_id} className="flex flex-col md:flex-row bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm overflow-hidden transition-all hover:shadow-md animate-in fade-in slide-in-from-bottom-4 duration-300">
-                      
+                  {filteredReservations.map((res, index) => (
+                    <AnimatedWrapper 
+                      key={`${activeTicketTab}-${res.reservation_id}`} 
+                      delay={index * 75}
+                      className="flex flex-col md:flex-row bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm overflow-hidden transition-all hover:shadow-md"
+                    >
                       <div className="flex-1 p-6 sm:p-8">
                         <div className="flex justify-between items-start mb-4">
                           <span className="text-xs font-extrabold uppercase tracking-widest text-[#8B5CF6] dark:text-[#B794F4] bg-[#8B5CF6]/10 px-3 py-1 rounded-full">{res.sport_type}</span>
@@ -475,7 +501,7 @@ export default function Dashboard() {
                             <>
                               <button 
                                 onClick={() => navigate(`/checkout/${res.reservation_id}`)}
-                                className="w-full bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white py-3 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(139,92,246,0.2)] hover:scale-[1.02]"
+                                className="w-full bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white py-3 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(139,92,246,0.2)] hover:scale-[1.02] active:scale-95"
                               >
                                 Pay Now
                               </button>
@@ -487,7 +513,7 @@ export default function Dashboard() {
                           {activeTicketTab === 'Confirmed' && (
                             <>
                               <button className="w-full bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-[#50FA7B]/10 dark:text-[#50FA7B] dark:border-[#50FA7B]/20 py-3 rounded-xl font-bold cursor-default">Ticket Valid</button>
-                              <button onClick={() => openCancelModal(res)} className="w-full text-xs font-bold text-[#FF6E6E] hover:underline text-center">Request Cancellation</button>
+                              <button onClick={() => openCancelModal(res)} className="w-full text-xs font-bold text-[#FF6E6E] hover:underline text-center active:scale-95">Request Cancellation</button>
                             </>
                           )}
                           {activeTicketTab === 'Canceled & Expired' && (
@@ -501,15 +527,15 @@ export default function Dashboard() {
                           )}
                         </div>
                       </div>
-                    </div>
+                    </AnimatedWrapper>
                   ))}
                 </div>
               )}
-            </div>
+            </AnimatedWrapper>
           )}
 
           {activeSidebar === 'Profile' && (
-            <div className="bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm p-8 sm:p-12 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <AnimatedWrapper key="profile" className="bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm p-8 sm:p-12">
               <div className="flex flex-col items-center mb-10">
                 <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-[#7C3AED] to-[#8B5CF6] text-white flex items-center justify-center text-4xl font-extrabold shadow-lg mb-4 ring-4 ring-[#8B5CF6]/20">
                   {getInitials()}
@@ -527,44 +553,43 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">First Name</label>
-                    <input type="text" name="first_name" value={profileForm.first_name} onChange={handleProfileChange} placeholder="e.g. John" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none" />
+                    <input type="text" name="first_name" value={profileForm.first_name} onChange={handleProfileChange} placeholder="e.g. John" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none transition-shadow" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Last Name</label>
-                    <input type="text" name="last_name" value={profileForm.last_name} onChange={handleProfileChange} placeholder="e.g. Doe" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none" />
+                    <input type="text" name="last_name" value={profileForm.last_name} onChange={handleProfileChange} placeholder="e.g. Doe" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none transition-shadow" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Username</label>
-                    <input type="text" name="username" value={profileForm.username} onChange={handleProfileChange} placeholder="e.g. jdoe99" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none" />
+                    <input type="text" name="username" value={profileForm.username} onChange={handleProfileChange} placeholder="e.g. jdoe99" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none transition-shadow" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Email Address</label>
-                    <input type="email" name="email" value={profileForm.email} onChange={handleProfileChange} placeholder="john@example.com" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none" />
+                    <input type="email" name="email" value={profileForm.email} onChange={handleProfileChange} placeholder="john@example.com" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none transition-shadow" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Phone Number</label>
-                    <input type="text" name="phone_number" value={profileForm.phone_number} onChange={handleProfileChange} placeholder="+1234567890" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none font-mono" />
+                    <input type="text" name="phone_number" value={profileForm.phone_number} onChange={handleProfileChange} placeholder="+1234567890" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none font-mono transition-shadow" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">City</label>
-                    <input type="text" name="city" value={profileForm.city} onChange={handleProfileChange} placeholder="e.g. Tehran" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none" />
+                    <input type="text" name="city" value={profileForm.city} onChange={handleProfileChange} placeholder="e.g. Tehran" className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none transition-shadow" />
                   </div>
                 </div>
                 
                 <div className="pt-4 flex justify-end">
-                  <button disabled={isSavingProfile} type="submit" className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white rounded-xl font-bold hover:scale-[1.02] transition-transform shadow-[0_0_15px_rgba(139,92,246,0.2)] disabled:opacity-70 flex justify-center items-center gap-2">
+                  <button disabled={isSavingProfile} type="submit" className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white rounded-xl font-bold hover:scale-[1.02] active:scale-95 transition-transform shadow-[0_0_15px_rgba(139,92,246,0.2)] disabled:opacity-70 flex justify-center items-center gap-2">
                     {isSavingProfile ? (
                       <><svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...</>
                     ) : 'Save Changes'}
                   </button>
                 </div>
               </form>
-            </div>
+            </AnimatedWrapper>
           )}
 
           {activeSidebar === 'Reports' && (
-            <div className="bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm p-8 sm:p-12 animate-in fade-in slide-in-from-bottom-4 duration-300">
-              
+            <AnimatedWrapper key={`reports-${isCreatingReport ? 'new' : 'list'}`} className="bg-[#FFFFFF] dark:bg-[#232130] rounded-3xl border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm p-8 sm:p-12">
               {reportError && <div className="mb-6 p-4 bg-[#FF6E6E]/10 border border-[#FF6E6E]/20 text-[#FF6E6E] font-bold rounded-xl text-sm">{reportError}</div>}
               {reportSuccess && <div className="mb-6 p-4 bg-[#50FA7B]/10 border border-[#50FA7B]/20 text-[#50FA7B] font-bold rounded-xl text-sm">{reportSuccess}</div>}
 
@@ -577,7 +602,7 @@ export default function Dashboard() {
                     </div>
                     <button 
                       onClick={() => setIsCreatingReport(true)} 
-                      className="px-6 py-2.5 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white rounded-xl font-bold hover:scale-[1.02] transition-transform shadow-[0_0_15px_rgba(139,92,246,0.2)] flex items-center gap-2"
+                      className="px-6 py-2.5 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white rounded-xl font-bold hover:scale-[1.02] active:scale-95 transition-transform shadow-[0_0_15px_rgba(139,92,246,0.2)] flex items-center gap-2"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" /></svg>
                       New Report
@@ -595,7 +620,7 @@ export default function Dashboard() {
                   ) : (
                     <div className="space-y-4">
                       {reports.map((report, idx) => (
-                        <div key={idx} className="p-5 border border-[#E5E7EB] dark:border-[#2D2B3D] rounded-2xl flex flex-col gap-4">
+                        <AnimatedWrapper key={`report-${idx}`} delay={idx * 75} className="p-5 border border-[#E5E7EB] dark:border-[#2D2B3D] rounded-2xl flex flex-col gap-4">
                           <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
@@ -628,17 +653,17 @@ export default function Dashboard() {
                               <p className="text-sm text-[#111827] dark:text-[#FFFFFF]">{report.reply}</p>
                             </div>
                           )}
-                        </div>
+                        </AnimatedWrapper>
                       ))}
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                <div>
                   <div className="flex items-center gap-3 mb-8">
                     <button 
                       onClick={() => setIsCreatingReport(false)}
-                      className="p-2 bg-[#F3F4F6] dark:bg-[#1A1924] rounded-full text-[#6B7280] dark:text-[#A2A2CC] hover:bg-[#E5E7EB] dark:hover:bg-[#2D2B3D] transition-colors"
+                      className="p-2 bg-[#F3F4F6] dark:bg-[#1A1924] rounded-full text-[#6B7280] dark:text-[#A2A2CC] hover:bg-[#E5E7EB] dark:hover:bg-[#2D2B3D] transition-colors active:scale-95"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M7.72 12.53a.75.75 0 0 1 0-1.06l7.5-7.5a.75.75 0 1 1 1.06 1.06L9.31 12l6.97 6.97a.75.75 0 1 1-1.06 1.06l-7.5-7.5Z" clipRule="evenodd" /></svg>
                     </button>
@@ -651,7 +676,7 @@ export default function Dashboard() {
                   <form onSubmit={handleReportSubmit} className="space-y-6">
                     <div>
                       <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Report Category</label>
-                      <select required name="report_type" value={reportForm.report_type} onChange={handleReportChange} className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none appearance-none">
+                      <select required name="report_type" value={reportForm.report_type} onChange={handleReportChange} className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none appearance-none transition-shadow">
                         <option value="">Select a category...</option>
                         <option value="General">General</option>
                         <option value="Technical">Technical</option>
@@ -664,7 +689,7 @@ export default function Dashboard() {
                     
                     <div>
                       <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Related Ticket (Optional)</label>
-                      <select name="reservation_id" value={reportForm.reservation_id} onChange={handleReportChange} className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none appearance-none">
+                      <select name="reservation_id" value={reportForm.reservation_id} onChange={handleReportChange} className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none appearance-none transition-shadow">
                         <option value="">None (General Inquiry)</option>
                         {reservations.map(res => (
                           <option key={res.reservation_id} value={res.reservation_id}>
@@ -676,11 +701,11 @@ export default function Dashboard() {
 
                     <div>
                       <label className="block text-xs font-bold text-[#6B7280] dark:text-[#A2A2CC] uppercase tracking-wider mb-2">Message</label>
-                      <textarea required maxLength="2000" name="description" value={reportForm.description} onChange={handleReportChange} rows="5" placeholder="Please describe the issue in detail..." className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none resize-none"></textarea>
+                      <textarea required maxLength="2000" name="description" value={reportForm.description} onChange={handleReportChange} rows="5" placeholder="Please describe the issue in detail..." className="w-full p-3.5 rounded-xl bg-[#F9FAFB] dark:bg-[#1A1924] border border-[#E5E7EB] dark:border-[#2D2B3D] text-[#111827] dark:text-[#FFFFFF] focus:ring-2 focus:ring-[#8B5CF6] outline-none resize-none transition-shadow"></textarea>
                     </div>
 
                     <div className="pt-4 flex justify-end">
-                      <button disabled={isSubmittingReport} type="submit" className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white rounded-xl font-bold hover:scale-[1.02] transition-transform shadow-[0_0_15px_rgba(139,92,246,0.2)] disabled:opacity-70 flex justify-center items-center gap-2">
+                      <button disabled={isSubmittingReport} type="submit" className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white rounded-xl font-bold hover:scale-[1.02] active:scale-95 transition-transform shadow-[0_0_15px_rgba(139,92,246,0.2)] disabled:opacity-70 flex justify-center items-center gap-2">
                         {isSubmittingReport ? (
                           <><svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Submitting...</>
                         ) : 'Submit Report'}
@@ -689,7 +714,7 @@ export default function Dashboard() {
                   </form>
                 </div>
               )}
-            </div>
+            </AnimatedWrapper>
           )}
 
         </div>
@@ -732,7 +757,7 @@ export default function Dashboard() {
               Refunds will be credited back to your original payment method within 3-5 business days.
             </p>
 
-            <button onClick={handleFinalCancel} disabled={isCanceling} className="w-full bg-[#FF6E6E] text-white py-3.5 rounded-xl font-bold hover:bg-red-500 transition-colors disabled:opacity-70 flex justify-center items-center gap-2">
+            <button onClick={handleFinalCancel} disabled={isCanceling} className="w-full bg-[#FF6E6E] text-white py-3.5 rounded-xl font-bold hover:bg-red-500 transition-colors disabled:opacity-70 flex justify-center items-center gap-2 active:scale-95">
               {isCanceling ? 'Canceling Ticket...' : 'Confirm & Cancel Ticket'}
             </button>
           </div>

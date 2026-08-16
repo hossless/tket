@@ -45,7 +45,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#F9FAFB]/80 dark:bg-[#1A1924]/80 backdrop-blur-lg py-4 transition-colors duration-300">
+    <nav className="sticky top-0 z-50 bg-[#FFFFFF]/90 dark:bg-[#1A1924]/90 backdrop-blur-xl border-b border-[#E5E7EB] dark:border-[#2D2B3D] py-4 transition-colors duration-300 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex justify-between items-center">
         
         <div className="flex items-center gap-8">
@@ -60,7 +60,7 @@ export default function Navbar() {
               value={navSearch}
               onChange={(e) => setNavSearch(e.target.value)}
               onKeyDown={handleNavSearch}
-              className="w-72 pl-10 pr-4 py-2.5 rounded-full bg-[#FFFFFF] dark:bg-[#232130] border-transparent shadow-sm text-[#111827] dark:text-[#FFFFFF] placeholder-[#9CA3AF] dark:placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] transition-all text-sm font-medium"
+              className="w-72 pl-10 pr-4 py-2.5 rounded-full bg-[#F9FAFB] dark:bg-[#232130] border border-[#E5E7EB] dark:border-[#2D2B3D] shadow-sm text-[#111827] dark:text-[#FFFFFF] placeholder-[#9CA3AF] dark:placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] transition-all text-sm font-medium"
             />
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 absolute left-4 top-3 text-[#9CA3AF] dark:text-[#6B7280]">
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
@@ -71,7 +71,7 @@ export default function Navbar() {
         <div className="flex items-center gap-4 sm:gap-6">
           <button 
             onClick={toggleTheme}
-            className="p-2 rounded-full text-[#6B7280] dark:text-[#A2A2CC] hover:bg-[#E5E7EB] dark:hover:bg-[#2D2B3D] transition-colors"
+            className="p-2 rounded-full text-[#6B7280] dark:text-[#A2A2CC] hover:bg-[#F3F4F6] dark:hover:bg-[#2D2B3D] transition-colors"
             aria-label="Toggle Dark Mode"
           >
             {isDark ? (
